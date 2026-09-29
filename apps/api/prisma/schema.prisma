@@ -1,0 +1,296 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+generator adminMeta {
+  provider = "node prisma/generators/admin-meta.mjs"
+  output   = "../src/generated/admin-meta.ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Advertable {
+  id              BigInt        @id @default(autoincrement())
+  raceId          Int           @map("race_id")
+  advertisementId BigInt        @map("advertisement_id")
+  createdAt       DateTime      @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
+  race            Race          @relation(fields: [raceId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_9c496d578b")
+  advertisement   Advertisement @relation(fields: [advertisementId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_b7ef38dba4")
+
+  @@index([advertisementId], map: "index_advertables_on_advertisement_id")
+  @@index([raceId], map: "index_advertables_on_race_id")
+  @@map("advertables")
+}
+
+model Advertisement {
+  id          BigInt       @id @default(autoincrement())
+  position    Int?
+  imageUrl    String?      @map("image_url") @db.VarChar
+  siteUrl     String?      @map("site_url") @db.VarChar
+  expireAt    DateTime?    @map("expire_at") @db.Timestamp(6)
+  createdAt   DateTime     @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamp(6)
+  name        String?      @db.VarChar
+  advertables Advertable[]
+
+  @@map("advertisements")
+}
+
+/// Rails internal table, kept so migrations do not drop it.
+model ArInternalMetadatum {
+  key       String   @id @db.VarChar
+  value     String?  @db.VarChar
+  createdAt DateTime @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("ar_internal_metadata")
+}
+
+model Category {
+  id             Int          @id @default(autoincrement())
+  raceId         Int?         @map("race_id")
+  name           String?      @db.VarChar
+  createdAt      DateTime     @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamp(6)
+  category       Int?
+  trackLength    Int?         @map("track_length")
+  trackElevation Int?         @map("track_elevation")
+  trackDescent   Int?         @map("track_descent")
+  race           Race?        @relation(fields: [raceId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d42a0e9457")
+  raceResults    RaceResult[]
+
+  @@index([raceId], map: "index_categories_on_race_id")
+  @@map("categories")
+}
+
+model ClubLeaguePoint {
+  id        BigInt   @id @default(autoincrement())
+  clubId    Int?     @map("club_id")
+  leagueId  BigInt?  @map("league_id")
+  points    Json?    @default("{}")
+  total     Int?
+  createdAt DateTime @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  club      Club?    @relation(fields: [clubId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_12a4f2b0cc")
+  league    League?  @relation(fields: [leagueId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_825b6334d4")
+
+  @@index([clubId], map: "index_club_league_points_on_club_id")
+  @@index([leagueId], map: "index_club_league_points_on_league_id")
+  @@map("club_league_points")
+}
+
+model Club {
+  id               Int               @id @default(autoincrement())
+  name             String?           @db.VarChar
+  userId           Int?              @map("user_id")
+  createdAt        DateTime          @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
+  category         Int?              @default(0)
+  code             String?           @db.VarChar
+  clubLeaguePoints ClubLeaguePoint[]
+  user             User?             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d3ef48169e")
+  racers           Racer[]
+
+  @@index([userId], map: "index_clubs_on_user_id")
+  @@map("clubs")
+}
+
+model League {
+  id               BigInt            @id @default(autoincrement())
+  name             String?           @db.VarChar
+  createdAt        DateTime          @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamp(6)
+  leagueType       Int?              @map("league_type")
+  slug             String?           @unique(map: "index_leagues_on_slug") @db.VarChar
+  clubLeaguePoints ClubLeaguePoint[]
+  races            Race[]
+
+  @@map("leagues")
+}
+
+model Pool {
+  id           BigInt        @id @default(autoincrement())
+  name         String?       @db.VarChar
+  createdAt    DateTime      @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
+  races        Race[]
+  startNumbers StartNumber[]
+
+  @@map("pools")
+}
+
+model RaceAdmin {
+  id        BigInt   @id @default(autoincrement())
+  racerId   Int?     @map("racer_id")
+  raceId    Int?     @map("race_id")
+  createdAt DateTime @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  racer     Racer?   @relation(fields: [racerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_c887177279")
+  race      Race?    @relation(fields: [raceId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d4fa5a42bd")
+
+  @@index([raceId], map: "index_race_admins_on_race_id")
+  @@index([racerId], map: "index_race_admins_on_racer_id")
+  @@map("race_admins")
+}
+
+model RaceResult {
+  id                  Int          @id @default(autoincrement())
+  racerId             Int?         @map("racer_id")
+  raceId              Int?         @map("race_id")
+  status              Int?
+  lapTimes            Json?        @default("[]") @map("lap_times")
+  createdAt           DateTime     @map("created_at") @db.Timestamp(6)
+  updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamp(6)
+  points              Float?
+  categoryId          Int?         @map("category_id")
+  position            Int?
+  startNumberId       Int?         @map("start_number_id")
+  signalStrength      Int          @default(-1000) @map("signal_strength")
+  startedAt           DateTime?    @map("started_at") @db.Timestamp(6)
+  climbs              Json?        @default("{}")
+  finishDelta         String?      @default("- -") @map("finish_delta") @db.VarChar
+  finishTime          String?      @default("- -") @map("finish_time") @db.VarChar
+  additionalPoints    Float?       @map("additional_points")
+  missedControlPoints Int?         @default(0) @map("missed_control_points")
+  racer               Racer?       @relation(fields: [racerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_693ca1332b")
+  race                Race?        @relation(fields: [raceId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_fcb63d883b")
+  category            Category?    @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_race_results_category_id")
+  startNumber         StartNumber? @relation(fields: [startNumberId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_race_results_start_number_id")
+
+  @@unique([racerId, raceId], map: "index_race_results_on_racer_id_and_race_id")
+  @@index([categoryId], map: "index_race_results_on_category_id")
+  @@index([raceId], map: "index_race_results_on_race_id")
+  @@index([racerId], map: "index_race_results_on_racer_id")
+  @@index([startNumberId], map: "index_race_results_on_start_number_id")
+  @@map("race_results")
+}
+
+model Racer {
+  id           Int          @id @default(autoincrement())
+  firstName    String?      @map("first_name") @db.VarChar
+  lastName     String?      @map("last_name") @db.VarChar
+  yearOfBirth  Int?         @map("year_of_birth")
+  gender       Int?
+  email        String?      @db.VarChar
+  phoneNumber  String?      @map("phone_number") @db.VarChar
+  createdAt    DateTime     @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamp(6)
+  userId       Int?         @map("user_id")
+  clubId       Int?         @map("club_id")
+  category     Int?
+  address      String?      @db.VarChar
+  zipCode      String?      @map("zip_code") @db.VarChar
+  town         String?      @db.VarChar
+  dayOfBirth   Int?         @map("day_of_birth")
+  monthOfBirth Int?         @map("month_of_birth")
+  shirtSize    String?      @map("shirt_size") @db.VarChar
+  personalBest String?      @map("personal_best") @db.VarChar
+  country      String?      @db.VarChar
+  uciId        String?      @map("uci_id") @db.VarChar
+  hidden       Boolean?     @default(false)
+  clubAdmin    Boolean?     @default(false) @map("club_admin")
+  admin        Boolean      @default(false)
+  raceAdmins   RaceAdmin[]
+  raceResults  RaceResult[]
+  club         Club?        @relation(fields: [clubId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4a0fa4680b")
+  user         User?        @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_4a17abf4e3")
+
+  @@index([clubId], map: "index_racers_on_club_id")
+  @@index([userId], map: "index_racers_on_user_id")
+  @@map("racers")
+}
+
+model Race {
+  id                    Int           @id @default(autoincrement())
+  name                  String?       @db.VarChar
+  date                  DateTime?     @db.Timestamp(6)
+  laps                  Int?
+  easyLaps              Int?          @map("easy_laps")
+  createdAt             DateTime      @map("created_at") @db.Timestamp(6)
+  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
+  startedAt             DateTime?     @map("started_at") @db.Timestamp(6)
+  endedAt               DateTime?     @map("ended_at") @db.Timestamp(6)
+  descriptionUrl        String?       @map("description_url") @db.VarChar
+  registrationThreshold DateTime?     @map("registration_threshold") @db.Timestamp(6)
+  emailBody             String?       @map("email_body")
+  lockRaceResults       Boolean?      @map("lock_race_results")
+  sendEmail             Boolean?      @map("send_email")
+  uciDisplay            Boolean?      @map("uci_display")
+  raceType              Int?          @default(0) @map("race_type")
+  poolId                BigInt?       @map("pool_id")
+  leagueId              BigInt?       @map("league_id")
+  controlPoints         Json[]        @map("control_points")
+  pictureUrl            String?       @map("picture_url") @db.VarChar
+  locationUrl           String?       @map("location_url") @db.VarChar
+  pointsMultiplier      Float?        @default(1.0) @map("points_multiplier")
+  hidden                Boolean?      @default(false)
+  millisDisplay         Boolean?      @map("millis_display")
+  authToken             String?       @map("auth_token") @db.VarChar
+  skipAuth              Boolean?      @default(false) @map("skip_auth")
+  descriptionText       String?       @map("description_text")
+  advertables           Advertable[]
+  categories            Category[]
+  raceAdmins            RaceAdmin[]
+  raceResults           RaceResult[]
+  league                League?       @relation(fields: [leagueId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_5d0eae3fad")
+  pool                  Pool?         @relation(fields: [poolId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_609eb3d293")
+  startNumbers          StartNumber[]
+
+  @@index([authToken], map: "index_races_on_auth_token")
+  @@index([leagueId], map: "index_races_on_league_id")
+  @@index([poolId], map: "index_races_on_pool_id")
+  @@map("races")
+}
+
+/// Rails internal table, kept so migrations do not drop it.
+model SchemaMigration {
+  version String @id @db.VarChar
+
+  @@map("schema_migrations")
+}
+
+model StartNumber {
+  id             Int          @id @default(autoincrement())
+  value          String?      @db.VarChar
+  tagId          String?      @map("tag_id") @db.VarChar
+  createdAt      DateTime     @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamp(6)
+  raceId         Int?         @map("race_id")
+  poolId         BigInt?      @map("pool_id")
+  alternateTagId String?      @map("alternate_tag_id") @db.VarChar
+  race           Race?        @relation(fields: [raceId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_c300888542")
+  pool           Pool?        @relation(fields: [poolId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_c9eebed45c")
+  raceResults    RaceResult[]
+
+  @@index([poolId], map: "index_start_numbers_on_pool_id")
+  @@index([raceId], map: "index_start_numbers_on_race_id")
+  @@map("start_numbers")
+}
+
+model User {
+  id                  Int       @id @default(autoincrement())
+  email               String    @unique(map: "index_users_on_email") @default("") @db.VarChar
+  encryptedPassword   String    @default("") @map("encrypted_password") @db.VarChar
+  resetPasswordToken  String?   @unique(map: "index_users_on_reset_password_token") @map("reset_password_token") @db.VarChar
+  resetPasswordSentAt DateTime? @map("reset_password_sent_at") @db.Timestamp(6)
+  rememberCreatedAt   DateTime? @map("remember_created_at") @db.Timestamp(6)
+  signInCount         Int       @default(0) @map("sign_in_count")
+  currentSignInAt     DateTime? @map("current_sign_in_at") @db.Timestamp(6)
+  lastSignInAt        DateTime? @map("last_sign_in_at") @db.Timestamp(6)
+  currentSignInIp     String?   @map("current_sign_in_ip") @db.Inet
+  lastSignInIp        String?   @map("last_sign_in_ip") @db.Inet
+  createdAt           DateTime  @map("created_at") @db.Timestamp(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  admin               Boolean?
+  clubs               Club[]
+  racers              Racer[]
+
+  @@map("users")
+}

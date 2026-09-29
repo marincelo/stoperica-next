@@ -1,0 +1,19 @@
+{
+  "name": "stoperica-next",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.18.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @stoperica/api --filter @stoperica/web dev",
+    "dev:api": "pnpm --filter @stoperica/api dev",
+    "dev:web": "pnpm --filter @stoperica/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}

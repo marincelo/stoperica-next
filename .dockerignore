@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+apps/api/src/generated
+backups
+*.log
+.DS_Store

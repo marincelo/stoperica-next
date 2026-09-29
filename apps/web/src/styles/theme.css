@@ -1,0 +1,48 @@
+:root {
+  --gold-1: #ffe03d;
+  --gold: #ffb52e;
+  --gold-2: #ff8a1f;
+  --aqua: #3cc0f5;
+  --aqua-deep: #1b7fe0;
+  --gold-gradient: linear-gradient(135deg, var(--gold-1) 0%, var(--gold) 45%, var(--gold-2) 100%);
+  --aqua-gradient: linear-gradient(135deg, var(--aqua) 0%, var(--aqua-deep) 100%);
+}
+
+/* Solid primary (gold) and info (aqua) buttons get a gradient, a top highlight and a soft glow. */
+.n-button--primary-type:not(.n-button--secondary, .n-button--tertiary, .n-button--quaternary, .n-button--ghost, .n-button--text),
+.n-button--info-type:not(.n-button--secondary, .n-button--tertiary, .n-button--quaternary, .n-button--ghost, .n-button--text) {
+  transition:
+    filter 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.n-button--primary-type:not(.n-button--secondary, .n-button--tertiary, .n-button--quaternary, .n-button--ghost, .n-button--text) {
+  background-image: var(--gold-gradient);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 4px 14px -4px rgba(255, 138, 31, 0.7);
+}
+.n-button--info-type:not(.n-button--secondary, .n-button--tertiary, .n-button--quaternary, .n-button--ghost, .n-button--text) {
+  background-image: var(--aqua-gradient);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 4px 14px -4px rgba(27, 127, 224, 0.7);
+}
+:is(.n-button--primary-type, .n-button--info-type):not(.n-button--secondary, .n-button--tertiary, .n-button--quaternary, .n-button--ghost, .n-button--text)
+  :is(.n-button__border, .n-button__state-border) {
+  border-color: transparent !important;
+}
+:is(.n-button--primary-type, .n-button--info-type):not(.n-button--secondary, .n-button--tertiary, .n-button--quaternary, .n-button--ghost, .n-button--text, .n-button--disabled):hover {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+}
+:is(.n-button--primary-type, .n-button--info-type):not(.n-button--secondary, .n-button--tertiary, .n-button--quaternary, .n-button--ghost, .n-button--text, .n-button--disabled):active {
+  filter: brightness(0.96);
+  transform: none;
+}
+
+/* Active segment tab gets an aqua underline. */
+.n-tabs .n-tabs-capsule {
+  box-shadow: inset 0 -2px 0 var(--aqua);
+}
