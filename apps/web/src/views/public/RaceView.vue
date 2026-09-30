@@ -7,6 +7,7 @@ import { ApiError } from '@/api/http'
 import { publicApi } from '@/api/public'
 import CategoryResults from '@/components/public/CategoryResults.vue'
 import RegistrationBox from '@/components/public/RegistrationBox.vue'
+import RaceExportMenu from '@/exports/RaceExportMenu.vue'
 import { formatDateTime, RACE_TYPE_LABELS } from '@/public/format'
 import { useAuthStore } from '@/stores/auth'
 
@@ -91,6 +92,7 @@ const scrollToCategory = (id: number | null) =>
                 <NButton v-if="race.locationUrl" tag="a" :href="race.locationUrl" target="_blank" rel="noopener noreferrer" type="info">
                   Lokacija
                 </NButton>
+                <RaceExportMenu v-if="auth.isAdmin" :race-id="race.id" />
               </NFlex>
               <p v-if="description" class="description">{{ description }}</p>
             </NFlex>

@@ -48,6 +48,26 @@ export async function request<T>(
   return data as T
 }
 
+/** Downloads a file response and saves it under the server-provided name (Content-Disposition). */
+export async function download(path: string, fallbackName: string): Promise<void> {
+  const response = await fetch(BASE_URL + path, { credentials: 'include', headers: { 'x-stoperica-client': '1' } })
+  if (!response.ok) {
+    const data = await response.json().catch(() => null)
+    if (response.status === 401) unauthorizedHandler?.()
+    throw new ApiError(response.status, data?.message ?? `Greška ${response.status}`)
+  }
+  const disposition = response.headers.get('content-disposition') ?? ''
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1]
+  const name = encoded ? decodeURIComponent(encoded) : fallbackName
+
+  const url = URL.createObjectURL(await response.blob())
+  const link = Object.assign(document.createElement('a'), { href: url, download: name })
+  document.body.append(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 export const http = {
   get: <T>(path: string, query?: Query) => request<T>('GET', path, { query }),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, { body }),

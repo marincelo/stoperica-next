@@ -90,6 +90,17 @@ export interface SessionUser {
 /** Keys of the Rails `Race.race_type` enum, indexed by the stored integer. */
 export type RaceType = 'mtb' | 'trcanje' | 'treking' | 'duatlon' | 'triatlon' | 'penjanje' | 'xco' | 'road'
 
+/** Admin Excel exports of a race, served from `GET /api/admin/exports/races/:id/:type`. */
+export type RaceExportType =
+  | 'all'
+  | 'start_list'
+  | 'results'
+  | 'results_uci'
+  | 'dataride'
+  | 'start_list_swim'
+  | 'start_list_swim_gender'
+  | 'results_swim'
+
 export interface PublicRaceSummary {
   id: number
   name: string | null
