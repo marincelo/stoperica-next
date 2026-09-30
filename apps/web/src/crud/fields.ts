@@ -19,7 +19,7 @@ export function isLongText(field: FieldMeta): boolean {
 
 export function inputKind(field: FieldMeta): InputKind {
   if (field.foreignKeyFor?.resource) return 'relation'
-  if (field.kind === 'enum') return 'enum'
+  if (field.kind === 'enum' || field.intEnum) return 'enum'
   if (field.isList || field.type === 'Json') return 'json'
   switch (field.type) {
     case 'Int':

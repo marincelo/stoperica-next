@@ -25,6 +25,11 @@ export interface FieldMeta {
   isReadOnly: boolean
   hasDefault: boolean
   isUpdatedAt: boolean
+  /**
+   * Labels for an integer Rails enum. The stored value is the index.
+   * Null for ordinary scalars.
+   */
+  intEnum: string[] | null
   /** Set for scalar foreign key fields (e.g. `userId`) pointing to the relation. */
   foreignKeyFor: RelationRef | null
   /** Set for `kind: 'object'` fields. */
