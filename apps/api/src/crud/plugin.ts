@@ -135,6 +135,7 @@ async function registerResourceRoutes(app: FastifyInstance, resource: Resource) 
         data: toPrismaData(resource, request.body, 'create'),
         omit: omitFor(resource),
       })
+      resource.definition.afterWrite?.(record[idField] as string | number | bigint)
       return reply.code(201).send(record)
     },
   )
@@ -142,16 +143,22 @@ async function registerResourceRoutes(app: FastifyInstance, resource: Resource) 
   app.patch<{ Params: { id: string }; Body: Record<string, unknown> }>(
     '/:id',
     { schema: { body: bodySchema(resource, 'update') } },
-    async (request) =>
-      db.update({
-        where: { [idField]: parseId(resource, request.params.id) },
+    async (request) => {
+      const id = parseId(resource, request.params.id)
+      const record = await db.update({
+        where: { [idField]: id },
         data: toPrismaData(resource, request.body, 'update'),
         omit: omitFor(resource),
-      }),
+      })
+      resource.definition.afterWrite?.(id)
+      return record
+    },
   )
 
   app.delete<{ Params: { id: string } }>('/:id', async (request, reply) => {
-    await db.delete({ where: { [idField]: parseId(resource, request.params.id) } })
+    const id = parseId(resource, request.params.id)
+    await db.delete({ where: { [idField]: id } })
+    resource.definition.afterWrite?.(id)
     return reply.code(204).send()
   })
 }
