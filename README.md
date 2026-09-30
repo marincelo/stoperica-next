@@ -119,6 +119,4 @@ While the site is served over **plain HTTP**, `COOKIE_SECURE=false` must stay in
 
 Logs: `ssh stoperica-next journalctl -u stoperica-api -f`.
 
-A **Docker Compose** layout (Caddy + nginx + API + Postgres) lives in `compose.yaml` and is documented in [`DEPLOY.md`](DEPLOY.md). It needs about 2 GB of RAM for the image build, so it is not what the current droplet uses.
-
 Registration emails are still printed to the API log. They will need an SMTP/provider implementation in `apps/api/src/lib/mailer.ts` before cut-over.
