@@ -1,5 +1,22 @@
 # Deploying Stoperica
 
+## Current setup: small droplet without Docker (`deploy/droplet/`)
+
+The 512 MB droplet (`stoperica-next` in `~/.ssh/config`) runs nginx, Postgres and the API directly. Everything is built on the developer machine:
+
+```sh
+deploy/droplet/deploy.sh stoperica-next   # build, migrate via SSH tunnel, rsync, restart
+```
+
+- One-time server setup: `deploy/droplet/setup.sh` (swap, Node 24, nginx, Postgres, systemd unit, backups, firewall).
+- Secrets live only on the server in `/etc/stoperica/api.env`.
+- API logs: `ssh stoperica-next journalctl -u stoperica-api -f`
+- Nightly dumps: `/srv/stoperica/backups` (14 days).
+
+The rest of this document describes the Docker Compose alternative for a larger droplet.
+
+## Docker Compose (larger droplet)
+
 Everything runs on one DigitalOcean droplet with Docker Compose:
 
 ```
