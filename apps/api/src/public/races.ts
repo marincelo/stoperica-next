@@ -12,6 +12,7 @@ import { HttpError } from '../lib/errors.js'
 import { mailer } from '../lib/mailer.js'
 import { NO_UCI_ID } from '../auth/profile.js'
 import { LEAGUE_TYPES, RACE_TYPES, RESULT_STATUS } from './enums.js'
+import { presentRacePage, racePageCache, type CachedRacePage } from './raceCache.js'
 import { computeSplits } from './splits.js'
 
 export const visibleRace = { OR: [{ hidden: false }, { hidden: null }] } satisfies Prisma.RaceWhereInput
@@ -141,6 +142,50 @@ async function findVisibleRace(id: number) {
   return race
 }
 
+/** Shared race-page payload. `registrationOpen`, `cancellationAllowed` and `myRegistration` are added per request. */
+async function loadRacePage(id: number): Promise<CachedRacePage> {
+  const race = await findVisibleRace(id)
+  const rows = await prisma.raceResult.findMany({
+    where: { raceId: race.id, racerId: { not: null } },
+    select: resultSelect,
+  })
+
+  const started = race.startedAt !== null
+  const { registrationOpen: _registrationOpen, ...summary } = toSummary(race)
+  const ctx: ResultContext = {
+    raceType: summary.raceType,
+    millisDisplay: race.millisDisplay ?? false,
+    uciDisplay: race.uciDisplay ?? false,
+    raceStartedAt: race.startedAt,
+    controlPoints: race.controlPoints,
+  }
+  const toResults = (list: ResultRow[]) => sortResults(list, started).map((row) => toResult(row, ctx))
+
+  const groups: PublicCategory[] = race.categories.map((category) => ({
+    id: category.id,
+    name: category.name ?? `Kategorija ${category.id}`,
+    trackLength: category.trackLength,
+    results: toResults(rows.filter((r) => r.categoryId === category.id)),
+  }))
+  const categoryIds = new Set(race.categories.map((c) => c.id))
+  const uncategorized = rows.filter((r) => r.categoryId === null || !categoryIds.has(r.categoryId))
+  if (uncategorized.length) {
+    groups.push({ id: null, name: 'Bez kategorije', trackLength: null, results: toResults(uncategorized) })
+  }
+
+  return {
+    ...summary,
+    descriptionText: race.descriptionText,
+    startedAt: race.startedAt?.toISOString() ?? null,
+    endedAt: race.endedAt?.toISOString() ?? null,
+    millisDisplay: ctx.millisDisplay,
+    uciDisplay: ctx.uciDisplay,
+    waiverRequired: LEAGUE_TYPES[race.league?.leagueType ?? -1] === 'xczld',
+    lockRaceResults: race.lockRaceResults ?? false,
+    categories: groups,
+  }
+}
+
 const idParams = {
   type: 'object',
   required: ['id'],
@@ -187,51 +232,12 @@ export const publicRaceRoutes: FastifyPluginAsync = async (app) => {
     '/:id',
     { schema: { params: idParams }, onRequest: app.optionalAuth },
     async (request): Promise<PublicRaceDetail> => {
-      const race = await findVisibleRace(request.params.id)
-      const rows = await prisma.raceResult.findMany({
-        where: { raceId: race.id, racerId: { not: null } },
-        select: resultSelect,
-      })
-
-      const started = race.startedAt !== null
-      const summary = toSummary(race)
-      const ctx: ResultContext = {
-        raceType: summary.raceType,
-        millisDisplay: race.millisDisplay ?? false,
-        uciDisplay: race.uciDisplay ?? false,
-        raceStartedAt: race.startedAt,
-        controlPoints: race.controlPoints,
+      let cached = racePageCache.get(request.params.id)
+      if (!cached) {
+        cached = await loadRacePage(request.params.id)
+        racePageCache.set(request.params.id, cached)
       }
-      const toResults = (list: ResultRow[]) => sortResults(list, started).map((row) => toResult(row, ctx))
-
-      const groups: PublicCategory[] = race.categories.map((category) => ({
-        id: category.id,
-        name: category.name ?? `Kategorija ${category.id}`,
-        trackLength: category.trackLength,
-        results: toResults(rows.filter((r) => r.categoryId === category.id)),
-      }))
-      const categoryIds = new Set(race.categories.map((c) => c.id))
-      const uncategorized = rows.filter((r) => r.categoryId === null || !categoryIds.has(r.categoryId))
-      if (uncategorized.length) {
-        groups.push({ id: null, name: 'Bez kategorije', trackLength: null, results: toResults(uncategorized) })
-      }
-
-      const sessionId = request.session?.id
-      const mine = sessionId ? rows.find((r) => r.racer?.id === sessionId) : undefined
-      const registrationOpen = isRegistrationOpen(race)
-
-      return {
-        ...summary,
-        descriptionText: race.descriptionText,
-        startedAt: race.startedAt?.toISOString() ?? null,
-        endedAt: race.endedAt?.toISOString() ?? null,
-        millisDisplay: ctx.millisDisplay,
-        uciDisplay: ctx.uciDisplay,
-        waiverRequired: LEAGUE_TYPES[race.league?.leagueType ?? -1] === 'xczld',
-        cancellationAllowed: registrationOpen && !race.lockRaceResults,
-        categories: groups,
-        myRegistration: mine ? { id: mine.id, categoryId: mine.categoryId, status: mine.status } : null,
-      }
+      return presentRacePage(cached, request.session?.id)
     },
   )
 
@@ -285,6 +291,7 @@ export const publicRaceRoutes: FastifyPluginAsync = async (app) => {
         },
         select: { id: true, categoryId: true, status: true },
       })
+      racePageCache.invalidate(race.id)
 
       if (race.sendEmail) {
         await mailer.send({
@@ -309,6 +316,7 @@ export const publicRaceRoutes: FastifyPluginAsync = async (app) => {
         where: { raceId: race.id, racerId: request.session!.id },
       })
       if (!count) throw new HttpError(404, 'Niste prijavljeni na ovu utrku')
+      racePageCache.invalidate(race.id)
       return reply.code(204).send()
     },
   )

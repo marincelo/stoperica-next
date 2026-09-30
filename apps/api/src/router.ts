@@ -4,6 +4,7 @@ import { resource, type ResourceEntry } from './crud/resource.js'
 import { exportRoutes } from './exports/routes.js'
 import { publicLeagueRoutes } from './public/leagues.js'
 import { clubRoutes, meRoutes } from './public/me.js'
+import { racePageCache } from './public/raceCache.js'
 import { publicRaceRoutes } from './public/races.js'
 
 /**
@@ -11,7 +12,7 @@ import { publicRaceRoutes } from './public/races.js'
  * `resource('Model', { label, hidden, displayField })` for customization.
  */
 const adminResources: ResourceEntry[] = [
-  resource('Race', { label: 'Utrke' }),
+  resource('Race', { label: 'Utrke', afterWrite: (id) => racePageCache.invalidate(Number(id)) }),
   resource('League', { label: 'Natjecanja' }),
 ]
 
