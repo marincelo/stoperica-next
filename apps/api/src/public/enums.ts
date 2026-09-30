@@ -2,7 +2,13 @@
 
 export const RACE_TYPES = ['mtb', 'trcanje', 'treking', 'duatlon', 'triatlon', 'penjanje', 'xco', 'road'] as const
 
+/** Dropdown labels for `RACE_TYPES`, same index as the stored integer. */
+export const RACE_TYPE_LABELS = ['MTB', 'Trčanje', 'Treking', 'Duatlon', 'Triatlon', 'Penjanje', 'XCO', 'Cestovni'] as const
+
 export const LEAGUE_TYPES = ['xczld', 'lead', 'running', 'trail', 'stage_competitors_only'] as const
+
+/** Dropdown labels for `LEAGUE_TYPES`, same index as the stored integer. */
+export const LEAGUE_TYPE_LABELS = ['XCZLD', 'Sportsko penjanje', 'Trčanje', 'Trail', 'Etapna utrka'] as const
 
 export const RESULT_STATUS = {
   registered: 1,
@@ -29,6 +35,12 @@ export const CATEGORY_LABELS = [
   'U7 M', 'U7 Ž', 'U23', 'U30', 'Veteran A', 'Veteran B', 'Veteran C', 'Veteran D', 'Žene U35', 'Žene 35+',
 ] as const
 
+if (RACE_TYPE_LABELS.length !== RACE_TYPES.length) {
+  throw new Error('RACE_TYPE_LABELS must have one entry per RACE_TYPES value')
+}
+if (LEAGUE_TYPE_LABELS.length !== LEAGUE_TYPES.length) {
+  throw new Error('LEAGUE_TYPE_LABELS must have one entry per LEAGUE_TYPES value')
+}
 if (CATEGORY_LABELS.length !== CATEGORIES.length) {
   throw new Error('CATEGORY_LABELS must have one entry per CATEGORIES value')
 }
