@@ -113,7 +113,7 @@ function toResult(row: ResultRow, ctx: ResultContext): PublicResult {
 }
 
 /** Mirrors Rails `Race#sorted_results`: newest registrations first before the start, then by position/status. */
-function sortResults(rows: ResultRow[], started: boolean): ResultRow[] {
+export function sortResults<T extends Pick<ResultRow, 'position' | 'status' | 'createdAt'>>(rows: T[], started: boolean): T[] {
   if (!started) return [...rows].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
   const placed = rows.filter((r) => r.position !== null).sort((a, b) => a.position! - b.position!)
   const rest = rows.filter((r) => r.position === null).sort((a, b) => (b.status ?? 0) - (a.status ?? 0))
