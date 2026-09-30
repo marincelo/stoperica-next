@@ -32,6 +32,24 @@ export const fieldLabels: Record<string, string> = {
   'Race.millisDisplay': 'Prikaz milisekundi',
   'Race.authToken': 'Auth token',
   'Race.skipAuth': 'Preskoči autentikaciju',
+
+  'Pool.name': 'Naziv',
+
+  'StartNumber.value': 'Broj',
+  'StartNumber.tagId': 'Tag',
+  'StartNumber.alternateTagId': 'Alternativni tag',
+  'StartNumber.raceId': 'ID utrke',
+  'StartNumber.poolId': 'ID baze brojeva',
+
+  'RaceAdmin.racerId': 'ID natjecatelja',
+  'RaceAdmin.raceId': 'ID utrke',
+
+  'Category.name': 'Naziv',
+  'Category.raceId': 'ID utrke',
+  'Category.category': 'Vrsta',
+  'Category.trackLength': 'Duljina staze (m)',
+  'Category.trackElevation': 'Uspon (m)',
+  'Category.trackDescent': 'Spust (m)',
 }
 
 export function humanize(name: string): string {

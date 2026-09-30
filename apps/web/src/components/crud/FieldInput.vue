@@ -10,7 +10,11 @@ const model = defineModel<any>()
 
 const kind = computed(() => inputKind(props.field))
 const clearable = computed(() => !props.field.isRequired)
-const enumOptions = computed(() => (props.enumValues ?? []).map((v) => ({ label: v, value: v })))
+const enumOptions = computed(() =>
+  props.field.intEnum
+    ? props.field.intEnum.map((label, value) => ({ label, value }))
+    : (props.enumValues ?? []).map((value) => ({ label: value, value })),
+)
 </script>
 
 <template>

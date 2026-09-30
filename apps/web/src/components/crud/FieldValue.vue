@@ -23,6 +23,7 @@ const relationLabel = computed(() => {
 const formatted = computed(() => {
   const v = value.value
   if (v === null || v === undefined || v === '') return null
+  if (props.field.intEnum && typeof v === 'number') return props.field.intEnum[v] ?? String(v)
   if (kind.value === 'datetime') return new Date(v as string).toLocaleString('hr-HR')
   if (kind.value === 'json') return JSON.stringify(v, null, props.compact ? 0 : 2)
   return String(v)

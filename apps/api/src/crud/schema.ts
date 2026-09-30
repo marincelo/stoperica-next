@@ -8,6 +8,7 @@ export function writableFields(resource: Resource): FieldMeta[] {
 }
 
 function scalarSchema(field: FieldMeta, enums: Record<string, string[]>): JsonSchema {
+  if (field.intEnum) return { type: 'integer', minimum: 0, maximum: field.intEnum.length - 1 }
   if (field.kind === 'enum') return { type: 'string', enum: enums[field.type] ?? [] }
   switch (field.type) {
     case 'String':
