@@ -2,6 +2,7 @@
 import type { PublicCategory, PublicResult, RaceStartNumberOption, RaceType } from '@stoperica/shared'
 import { NTag, useThemeVars } from 'naive-ui'
 import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import BibAssign from '@/components/public/BibAssign.vue'
 import TrophyIcon from '@/components/public/TrophyIcon.vue'
 import { cleanTime, countryFlag, countryName, racerName, statusLabel, statusType, uciRacerName } from '@/public/format'
@@ -102,7 +103,7 @@ const trackKm = computed(() =>
         <div class="r-who">
           <div class="r-name">
             <span v-if="r.racer.country" class="flag" :title="countryName(r.racer.country)">{{ countryFlag(r.racer.country) }}</span>
-            <span class="name-text">{{ displayName(r) }}</span>
+            <RouterLink :to="{ name: 'racer', params: { id: r.racer.id } }" class="name-text">{{ displayName(r) }}</RouterLink>
           </div>
           <div class="r-club">{{ r.racer.club ?? '' }}</div>
         </div>
@@ -234,6 +235,13 @@ const trackKm = computed(() =>
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.name-text {
+  color: inherit;
+  text-decoration: none;
+}
+.name-text:hover {
+  color: var(--primary);
 }
 .r-club {
   font-size: 13px;
