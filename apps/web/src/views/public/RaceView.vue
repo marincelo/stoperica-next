@@ -66,7 +66,7 @@ const scrollToCategory = (id: number | null) =>
         <NGridItem span="1 m:2">
           <NCard :bordered="false" content-style="padding: 0">
             <img v-if="race.pictureUrl" :src="race.pictureUrl" :alt="race.name ?? ''" class="hero" />
-            <NFlex vertical :size="12" style="padding-top: 16px">
+            <NFlex vertical :size="12" style="padding: 16px">
               <NFlex :size="6">
                 <NTag v-if="race.raceType" :bordered="false">{{ RACE_TYPE_LABELS[race.raceType] }}</NTag>
                 <RouterLink
