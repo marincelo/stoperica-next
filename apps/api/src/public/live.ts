@@ -57,7 +57,7 @@ export async function loadLiveRace(): Promise<LiveRace | null> {
           gender: true,
           country: true,
           uciId: true,
-          club: { select: { name: true } },
+          club: { select: { id: true, name: true } },
         },
       },
     },
@@ -66,7 +66,8 @@ export async function loadLiveRace(): Promise<LiveRace | null> {
   const results: LiveResult[] = rows.map((row) => {
     const racer = row.racer!
     const unlicensed = !racer.uciId || racer.uciId === NO_UCI_ID
-    const club = uciDisplay && unlicensed ? 'Individual' : (racer.club?.name ?? 'Individual')
+    const individual = uciDisplay && unlicensed
+    const club = individual ? 'Individual' : (racer.club?.name ?? 'Individual')
     return {
       id: row.id,
       status: row.status,
@@ -79,6 +80,7 @@ export async function loadLiveRace(): Promise<LiveRace | null> {
         gender: racer.gender,
         country: racer.country,
         club,
+        clubId: individual ? null : (racer.club?.id ?? null),
         uciId: uciDisplay && !unlicensed ? racer.uciId : null,
       },
       liveTime: liveTime({

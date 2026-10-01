@@ -4,6 +4,7 @@ import { NFlex, NSpin, NSwitch, useThemeVars } from 'naive-ui'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { publicApi } from '@/api/public'
+import ClubLink from '@/components/public/ClubLink.vue'
 import { formatElapsed, racerName, statusLabel, uciRacerName } from '@/public/format'
 
 const LIVE_POLL_MS = 20_000
@@ -172,7 +173,7 @@ const themeStyle = computed(() => ({
                     <td>
                       <RouterLink :to="{ name: 'racer', params: { id: r.racer.id } }">{{ displayName(r) }}</RouterLink>
                     </td>
-                    <td>{{ r.racer.club }}</td>
+                    <td><ClubLink :name="r.racer.club" :club-id="r.racer.clubId" /></td>
                     <td class="time">{{ r.liveTime.time }} <span class="cp">{{ r.liveTime.controlPoint }}</span></td>
                   </tr>
                 </template>
@@ -183,7 +184,7 @@ const themeStyle = computed(() => ({
                 <td>
                   <RouterLink :to="{ name: 'racer', params: { id: r.racer.id } }">{{ displayName(r) }}</RouterLink>
                 </td>
-                <td>{{ r.racer.club }}</td>
+                <td><ClubLink :name="r.racer.club" :club-id="r.racer.clubId" /></td>
                 <td class="time">{{ r.liveTime.time }} <span class="cp">{{ r.liveTime.controlPoint }}</span></td>
               </tr>
             </tbody>
@@ -211,7 +212,7 @@ const themeStyle = computed(() => ({
                 <td>
                   <RouterLink :to="{ name: 'racer', params: { id: r.racer.id } }">{{ displayName(r) }}</RouterLink>
                 </td>
-                <td>{{ r.racer.club }}</td>
+                <td><ClubLink :name="r.racer.club" :club-id="r.racer.clubId" /></td>
                 <td>{{ statusLabel(r) }}</td>
               </tr>
             </tbody>
@@ -239,7 +240,7 @@ const themeStyle = computed(() => ({
                 <td>
                   <RouterLink :to="{ name: 'racer', params: { id: r.racer.id } }">{{ displayName(r) }}</RouterLink>
                 </td>
-                <td>{{ r.racer.club }}</td>
+                <td><ClubLink :name="r.racer.club" :club-id="r.racer.clubId" /></td>
                 <td>{{ statusLabel(r) }}</td>
               </tr>
             </tbody>
