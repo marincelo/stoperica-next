@@ -2,6 +2,7 @@ import type { ListQuery, ListResponse, OptionItem } from '@stoperica/shared'
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify'
 import { prisma } from '../db.js'
 import { HttpError } from '../lib/errors.js'
+import { displayLabel } from './label.js'
 import { ResourceRegistry, type Resource } from './registry.js'
 import type { ResourceEntry } from './resource.js'
 import { bodySchema, listQuerySchema } from './schema.js'
@@ -72,7 +73,7 @@ function orderBy(resource: Resource, sort: string | undefined, order: 'asc' | 'd
 
 async function registerResourceRoutes(app: FastifyInstance, resource: Resource) {
   const db = delegateFor(resource)
-  const { idField, displayField } = resource.meta
+  const { idField, displayFields } = resource.meta
 
   app.get<{ Querystring: Required<Pick<ListQuery, 'page' | 'pageSize' | 'order'>> & ListQuery }>(
     '/',
@@ -97,12 +98,12 @@ async function registerResourceRoutes(app: FastifyInstance, resource: Resource) 
 
   app.get('/options', async (): Promise<OptionItem[]> => {
     const rows = await db.findMany({
-      select: { [idField]: true, [displayField]: true },
-      orderBy: { [displayField]: 'asc' },
+      select: Object.fromEntries([idField, ...displayFields].map((name) => [name, true])),
+      orderBy: displayFields.map((name) => ({ [name]: 'asc' as const })),
     })
     return rows.map((row) => ({
       value: row[idField] as string | number,
-      label: String(row[displayField] ?? row[idField]),
+      label: displayLabel(row, displayFields, row[idField]),
     }))
   })
 

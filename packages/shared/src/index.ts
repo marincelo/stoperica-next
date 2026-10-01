@@ -56,6 +56,8 @@ export interface ModelMeta {
   label: string
   idField: string
   displayField: string
+  /** Fields joined for relation/option labels. Defaults to `[displayField]`. */
+  displayFields: string[]
   fields: FieldMeta[]
   enums: Record<string, string[]>
   searchFields: string[]

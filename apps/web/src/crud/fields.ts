@@ -53,9 +53,19 @@ export function columnCandidates(meta: ModelMeta): FieldMeta[] {
 
 export function defaultColumns(meta: ModelMeta, max = 8): string[] {
   const candidates = columnCandidates(meta).map((f) => f.name)
-  const preferred = [meta.idField, meta.displayField]
+  const preferred = [meta.idField, ...displayFieldsOf(meta)]
   const rest = candidates.filter((name) => !preferred.includes(name) && name !== 'updatedAt')
   return [...new Set([...preferred, ...rest])].filter((n) => candidates.includes(n)).slice(0, max)
+}
+
+export function displayFieldsOf(meta: ModelMeta): string[] {
+  return meta.displayFields?.length ? meta.displayFields : [meta.displayField]
+}
+
+export function displayLabel(row: Record<string, unknown>, fields: string[], fallback: unknown): string {
+  const parts = fields.map((field) => row[field]).filter((value) => value != null && String(value).trim() !== '')
+  if (parts.length) return parts.map(String).join(' ')
+  return fallback == null || fallback === '' ? '—' : String(fallback)
 }
 
 export function isRequiredInput(field: FieldMeta): boolean {

@@ -54,7 +54,9 @@ export class ResourceRegistry {
         if (field.kind !== 'object' || field.isList || !field.relation?.resource) continue
         const target = this.byModel.get(field.relation.model)!
         resource.labelIncludes[field.name] = {
-          select: { [target.meta.idField]: true, [target.meta.displayField]: true },
+          select: Object.fromEntries(
+            [target.meta.idField, ...target.meta.displayFields].map((name) => [name, true as const]),
+          ),
         }
       }
     }
@@ -141,6 +143,13 @@ function buildResource(
     ) ??
     idField.name
 
+  const displayFields = [...(definition.displayFields ?? [displayField])]
+  for (const name of displayFields) {
+    if (!fields.some((f) => f.name === name && f.kind === 'scalar')) {
+      throw new Error(`Display field "${name}" does not exist on model ${model.name}`)
+    }
+  }
+
   const searchFields = fields
     .filter(
       (f) =>
@@ -165,6 +174,7 @@ function buildResource(
       label: definition.label ?? model.name,
       idField: idField.name,
       displayField,
+      displayFields,
       fields,
       enums: Object.fromEntries(
         Object.entries(datamodel.enums).filter(([name]) => usedEnums.has(name)),

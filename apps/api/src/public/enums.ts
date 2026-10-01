@@ -21,6 +21,38 @@ export const RESULT_STATUS = {
 
 export const GENDER = { female: 1, male: 2 } as const
 
+/** Rails `Racer.gender`: 1 female, 2 male. Index 0 is unused. */
+export const GENDER_LABELS = ['—', 'Ženski', 'Muški'] as const
+
+/** Rails `Club.category` enum. Array index = stored value. */
+export const CLUB_CATEGORIES = [
+  'biciklisticki',
+  'triatlon',
+  'atletski',
+  'skole',
+  'ostali',
+  'penjacki',
+  'trail_trekking',
+  'trkacki_running',
+  'pro',
+  'timovi',
+  'daljinsko_plivanje',
+] as const
+
+export const CLUB_CATEGORY_LABELS = [
+  'Biciklistički',
+  'Triatlon',
+  'Atletski',
+  'Škole',
+  'Ostali',
+  'Penjački',
+  'Trail / trekking',
+  'Trkački',
+  'Pro',
+  'Timovi',
+  'Daljinsko plivanje',
+] as const
+
 /** Rails `Category.category` enum. Array index = stored value. */
 export const CATEGORIES = [
   'zene', 'u16', '16-20', '20-30', '30-40', '40-50', '50', 'muskarci', 'u9m', 'u9w', 'u11m', 'u11w', 'u13m', 'u13w',
@@ -43,4 +75,7 @@ if (LEAGUE_TYPE_LABELS.length !== LEAGUE_TYPES.length) {
 }
 if (CATEGORY_LABELS.length !== CATEGORIES.length) {
   throw new Error('CATEGORY_LABELS must have one entry per CATEGORIES value')
+}
+if (CLUB_CATEGORY_LABELS.length !== CLUB_CATEGORIES.length) {
+  throw new Error('CLUB_CATEGORY_LABELS must have one entry per CLUB_CATEGORIES value')
 }

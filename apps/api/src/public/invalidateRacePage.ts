@@ -45,3 +45,50 @@ export async function invalidateStartNumberRaces(id: number) {
   for (const raceId of previous) racePageCache.invalidate(raceId)
   for (const raceId of current) racePageCache.invalidate(raceId)
 }
+
+const racerRaceIds = new Map<number, Set<number>>()
+const clubRaceIds = new Map<number, Set<number>>()
+
+async function racesForRacer(id: number): Promise<Set<number>> {
+  const results = await prisma.raceResult.findMany({
+    where: { racerId: id, raceId: { not: null } },
+    select: { raceId: true },
+    distinct: ['raceId'],
+  })
+  return new Set(results.flatMap((row) => (row.raceId ? [row.raceId] : [])))
+}
+
+async function racesForClub(id: number): Promise<Set<number>> {
+  const racers = await prisma.racer.findMany({ where: { clubId: id }, select: { id: true } })
+  if (!racers.length) return new Set()
+  const results = await prisma.raceResult.findMany({
+    where: { racerId: { in: racers.map((racer) => racer.id) }, raceId: { not: null } },
+    select: { raceId: true },
+    distinct: ['raceId'],
+  })
+  return new Set(results.flatMap((row) => (row.raceId ? [row.raceId] : [])))
+}
+
+export async function rememberRacerRaces(id: number) {
+  racerRaceIds.set(id, await racesForRacer(id))
+}
+
+export async function invalidateRacerRaces(id: number) {
+  const previous = racerRaceIds.get(id) ?? new Set<number>()
+  racerRaceIds.delete(id)
+  const current = await racesForRacer(id)
+  for (const raceId of previous) racePageCache.invalidate(raceId)
+  for (const raceId of current) racePageCache.invalidate(raceId)
+}
+
+export async function rememberClubRaces(id: number) {
+  clubRaceIds.set(id, await racesForClub(id))
+}
+
+export async function invalidateClubRaces(id: number) {
+  const previous = clubRaceIds.get(id) ?? new Set<number>()
+  clubRaceIds.delete(id)
+  const current = await racesForClub(id)
+  for (const raceId of previous) racePageCache.invalidate(raceId)
+  for (const raceId of current) racePageCache.invalidate(raceId)
+}

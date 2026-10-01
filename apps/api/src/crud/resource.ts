@@ -14,6 +14,8 @@ export interface ResourceOptions<M extends ModelName> {
   hidden?: ScalarField<M>[]
   /** Field used as the label when this model is shown in a relation select. */
   displayField?: ScalarField<M>
+  /** Extra fields joined into relation/option labels (e.g. lastName + firstName). */
+  displayFields?: ScalarField<M>[]
   /** Integer columns edited as a dropdown. The stored value is the label's index. */
   intEnums?: Partial<Record<ScalarField<M>, readonly string[]>>
   /** Called before an update or delete, while the row still has its previous values. */
