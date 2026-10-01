@@ -132,22 +132,28 @@ const themeStyle = computed(() => ({
       <section v-for="[year, items] in byYear" :key="year" class="section">
         <h2 class="section-title">{{ year }}</h2>
         <div class="list">
-          <RouterLink v-for="league in items" :key="league.id" :to="leagueRoute(league)" class="row">
-            <span class="thumb">
+          <article v-for="league in items" :key="league.id" class="row">
+            <RouterLink :to="leagueRoute(league)" class="thumb">
               <img v-if="league.pictureUrl" :src="league.pictureUrl" alt="" loading="lazy" @error="hideBrokenImage" />
               <span v-else>🏆</span>
-            </span>
+            </RouterLink>
             <span class="row-main">
-              <strong class="row-name">{{ league.name }}</strong>
+              <RouterLink :to="leagueRoute(league)" class="row-name">{{ league.name }}</RouterLink>
               <span class="muted row-meta">
                 <template v-if="typeLabel(league)">{{ typeLabel(league) }} · </template>
                 {{ league.raceCount }} {{ racesWord(league.raceCount) }}
                 <template v-if="league.firstDate"> · {{ formatDate(league.firstDate) }} – {{ formatDate(league.lastDate) }}</template>
               </span>
-              <span v-if="league.clubLeader" class="row-leader">🏆 {{ league.clubLeader }}</span>
+              <RouterLink
+                v-if="league.clubLeader"
+                :to="{ name: 'club', params: { id: league.clubLeader.id } }"
+                class="row-leader"
+              >
+                🏆 {{ league.clubLeader.name }}
+              </RouterLink>
             </span>
-            <span class="chevron" aria-hidden="true">›</span>
-          </RouterLink>
+            <RouterLink :to="leagueRoute(league)" class="chevron" tabindex="-1" aria-hidden="true">›</RouterLink>
+          </article>
         </div>
       </section>
     </template>
@@ -272,7 +278,6 @@ const themeStyle = computed(() => ({
   gap: 12px;
   padding: 10px 12px;
   color: inherit;
-  text-decoration: none;
 }
 .row + .row {
   border-top: 1px solid var(--divider);
@@ -290,6 +295,8 @@ const themeStyle = computed(() => ({
   place-items: center;
   font-size: 22px;
   background: rgba(128, 128, 128, 0.15);
+  color: inherit;
+  text-decoration: none;
 }
 .thumb img {
   width: 100%;
@@ -306,19 +313,31 @@ const themeStyle = computed(() => ({
 .row-name {
   font-size: 15px;
   line-height: 1.3;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+}
+.row-name:hover {
+  color: var(--primary);
 }
 .row-meta,
 .row-leader {
   font-size: 12px;
 }
 .row-leader {
+  color: inherit;
+  text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.row-leader:hover {
+  color: var(--primary);
+}
 .chevron {
   font-size: 22px;
   color: var(--muted);
+  text-decoration: none;
 }
 
 @media (min-width: 768px) {

@@ -1,4 +1,4 @@
-import type { ClubOption, RacerProfile } from '@stoperica/shared'
+import type { RacerProfile } from '@stoperica/shared'
 import type { FastifyPluginAsync } from 'fastify'
 import { isPhoneTaken } from '../auth/credentials.js'
 import { profileSchema, toProfile, toProfileUpdateData } from '../auth/profile.js'
@@ -53,16 +53,5 @@ export const meRoutes: FastifyPluginAsync = async (app) => {
       select: profileSelect,
     })
     return toProfile(racer)
-  })
-}
-
-export const clubRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/', async (): Promise<ClubOption[]> => {
-    const clubs = await prisma.club.findMany({
-      where: { name: { not: null } },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    })
-    return clubs.map((club) => ({ id: club.id, name: club.name! }))
   })
 }

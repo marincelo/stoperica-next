@@ -15,7 +15,8 @@ import {
   rememberStartNumberRaces,
 } from './public/invalidateRacePage.js'
 import { publicLeagueRoutes } from './public/leagues.js'
-import { clubRoutes, meRoutes } from './public/me.js'
+import { clubRoutes } from './public/clubs.js'
+import { meRoutes } from './public/me.js'
 import { racePageCache } from './public/raceCache.js'
 import { publicRacerRoutes } from './public/racers.js'
 import { publicRaceRoutes } from './public/races.js'

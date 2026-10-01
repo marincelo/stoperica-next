@@ -73,7 +73,7 @@ const resultSelect = {
       gender: true,
       country: true,
       uciId: true,
-      club: { select: { name: true } },
+      club: { select: { id: true, name: true } },
     },
   },
 } satisfies Prisma.RaceResultSelect
@@ -92,6 +92,7 @@ function toResult(row: ResultRow, ctx: ResultContext): PublicResult {
   const hasPoints = row.points !== null || row.additionalPoints !== null
   const racer = row.racer!
   const unlicensed = !racer.uciId || racer.uciId === NO_UCI_ID
+  const individual = ctx.uciDisplay && unlicensed
   return {
     id: row.id,
     status: row.status,
@@ -108,7 +109,8 @@ function toResult(row: ResultRow, ctx: ResultContext): PublicResult {
       gender: racer.gender,
       country: racer.country,
       // Rails `Racer#club_name(is_uci)`: unlicensed racers are "Individual" in UCI races.
-      club: ctx.uciDisplay && unlicensed ? 'Individual' : (racer.club?.name ?? null),
+      club: individual ? 'Individual' : (racer.club?.name ?? null),
+      clubId: individual ? null : (racer.club?.id ?? null),
       uciId: ctx.uciDisplay && !unlicensed ? racer.uciId : null,
     },
     splits: computeSplits({ ...ctx, result: row }),

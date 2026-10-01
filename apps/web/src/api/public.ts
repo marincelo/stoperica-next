@@ -5,6 +5,7 @@ import type {
   ListResponse,
   LiveRace,
   MyRegistration,
+  PublicClubProfile,
   PublicRaceDetail,
   PublicRaceSummary,
   PublicRacerProfile,
@@ -18,6 +19,7 @@ export const publicApi = {
   race: (id: string | number) => http.get<PublicRaceDetail>(`/races/${id}`),
   live: () => http.get<LiveRace | null>('/races/live'),
   racer: (id: string | number) => http.get<PublicRacerProfile>(`/racers/${id}`),
+  club: (id: string | number) => http.get<PublicClubProfile>(`/clubs/${id}`),
   register: (raceId: number, body: { categoryId: number; waiverAccepted?: boolean }) =>
     http.post<MyRegistration>(`/races/${raceId}/registration`, body),
   cancelRegistration: (raceId: number) => http.delete(`/races/${raceId}/registration`),

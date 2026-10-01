@@ -10,6 +10,7 @@ export interface StandingRowView extends StandingValues {
   key: string | number
   title: string
   subtitle?: string | null
+  subtitleTo?: RouteLocationRaw
   flag?: string
   flagTitle?: string
   mine?: boolean
@@ -87,7 +88,10 @@ const roundPlaceholder = (race: LeagueRace) => (race.status === 'finished' ? 'â€
                 <RouterLink v-if="row.to" :to="row.to" class="title-text" @click.stop>{{ row.title }}</RouterLink>
                 <span v-else class="title-text">{{ row.title }}</span>
               </span>
-              <span v-if="row.subtitle" class="subtitle">{{ row.subtitle }}</span>
+              <RouterLink v-if="row.subtitleTo && row.subtitle" :to="row.subtitleTo" class="subtitle" @click.stop>
+                {{ row.subtitle }}
+              </RouterLink>
+              <span v-else-if="row.subtitle" class="subtitle">{{ row.subtitle }}</span>
             </span>
             <span
               v-for="(value, i) in row.rounds"
@@ -187,6 +191,14 @@ a.title-text {
   cursor: pointer;
 }
 a.title-text:hover {
+  color: var(--primary);
+}
+a.subtitle {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+a.subtitle:hover {
   color: var(--primary);
 }
 .subtitle {

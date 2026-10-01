@@ -143,6 +143,8 @@ export interface PublicRacer {
   gender: number | null
   country: string | null
   club: string | null
+  /** Null when the displayed name is UCI "Individual" or the racer has no club. */
+  clubId: number | null
   /** Only present for races with `uciDisplay`. */
   uciId: string | null
 }
@@ -274,7 +276,7 @@ export interface LeagueSummary {
   nextRace: { id: number; name: string | null; date: string | null } | null
   pictureUrl: string | null
   /** Club standings leader (winner once the league is finished). */
-  clubLeader: string | null
+  clubLeader: { id: number; name: string | null } | null
 }
 
 export interface LeagueRace {
@@ -297,7 +299,7 @@ export interface StandingValues {
 }
 
 export interface RacerStanding extends StandingValues {
-  racer: { id: number; firstName: string | null; lastName: string | null; country: string | null; club: string | null }
+  racer: { id: number; firstName: string | null; lastName: string | null; country: string | null; club: string | null; clubId: number | null }
 }
 
 export interface ClubStanding extends StandingValues {
@@ -336,6 +338,7 @@ export interface PublicRacerProfile {
   lastName: string | null
   country: string | null
   club: string | null
+  clubId: number | null
   results: PublicRacerRaceResult[]
 }
 
@@ -346,4 +349,18 @@ export interface PublicRacerRaceResult {
   finishTime: string | null
   categoryName: string | null
   race: { id: number; name: string | null }
+}
+
+/** Public club page. */
+export interface PublicClubMember {
+  id: number
+  firstName: string | null
+  lastName: string | null
+  country: string | null
+}
+
+export interface PublicClubProfile {
+  id: number
+  name: string | null
+  members: PublicClubMember[]
 }

@@ -67,6 +67,7 @@ const racerRows = computed<StandingRowView[]>(() =>
     key: row.racer.id,
     title: uciRacerName(row.racer),
     subtitle: row.racer.club,
+    subtitleTo: row.racer.clubId ? { name: 'club', params: { id: row.racer.clubId } } : undefined,
     flag: countryFlag(row.racer.country),
     flagTitle: countryName(row.racer.country),
     mine: row.racer.id === auth.user?.id,
@@ -74,7 +75,12 @@ const racerRows = computed<StandingRowView[]>(() =>
   })),
 )
 const clubRows = computed<StandingRowView[]>(() =>
-  (league.value?.clubStandings ?? []).map((row) => ({ ...row, key: row.club.id, title: row.club.name ?? '—' })),
+  (league.value?.clubStandings ?? []).map((row) => ({
+    ...row,
+    key: row.club.id,
+    title: row.club.name ?? '—',
+    to: { name: 'club', params: { id: row.club.id } },
+  })),
 )
 
 const typeLabel = computed(() => {
