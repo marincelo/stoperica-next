@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from 'fastify'
 import { crudPlugin } from './crud/plugin.js'
 import { resource, type ResourceEntry } from './crud/resource.js'
 import { exportRoutes } from './exports/routes.js'
-import { CATEGORY_LABELS } from './public/enums.js'
+import { CATEGORY_LABELS, LEAGUE_TYPE_LABELS, RACE_TYPE_LABELS } from './public/enums.js'
 import { invalidateCategoryRace, invalidateStartNumberRaces, rememberCategoryRace, rememberStartNumberRaces } from './public/invalidateRacePage.js'
 import { publicLeagueRoutes } from './public/leagues.js'
 import { clubRoutes, meRoutes } from './public/me.js'
@@ -14,20 +14,22 @@ import { publicRaceRoutes } from './public/races.js'
  * `resource('Model', { label, hidden, displayField })` for customization.
  */
 const adminResources: ResourceEntry[] = [
-  resource('Race', { label: 'Utrke', afterWrite: (id) => racePageCache.invalidate(Number(id)) }),
-  resource('League', { label: 'Natjecanja' }),
-  resource('Pool', { label: 'Baze brojeva', plainForeignKeys: true }),
+  resource('Race', {
+    label: 'Utrke',
+    intEnums: { raceType: RACE_TYPE_LABELS },
+    afterWrite: (id) => racePageCache.invalidate(Number(id)),
+  }),
+  resource('League', { label: 'Natjecanja', intEnums: { leagueType: LEAGUE_TYPE_LABELS } }),
+  resource('Pool', { label: 'Baze brojeva' }),
   resource('StartNumber', {
     label: 'Startni brojevi',
     displayField: 'value',
-    plainForeignKeys: true,
     beforeWrite: (id) => rememberStartNumberRaces(Number(id)),
     afterWrite: (id) => invalidateStartNumberRaces(Number(id)),
   }),
-  resource('RaceAdmin', { label: 'Administratori utrka', plainForeignKeys: true }),
+  resource('RaceAdmin', { label: 'Administratori utrka' }),
   resource('Category', {
     label: 'Kategorije',
-    plainForeignKeys: true,
     intEnums: { category: CATEGORY_LABELS },
     beforeWrite: (id) => rememberCategoryRace(Number(id)),
     afterWrite: (id) => invalidateCategoryRace(Number(id)),

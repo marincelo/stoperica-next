@@ -11,6 +11,5 @@ export const crudApi = {
   update: (resource: string, id: string, data: Row) =>
     http.patch<Row>(`/admin/${resource}/${encodeURIComponent(id)}`, data),
   remove: (resource: string, id: string) => http.delete(`/admin/${resource}/${encodeURIComponent(id)}`),
-  options: (resource: string, query: { search?: string; ids?: string }) =>
-    http.get<OptionItem[]>(`/admin/${resource}/options`, query),
+  options: (resource: string) => http.get<OptionItem[]>(`/admin/${resource}/options`),
 }

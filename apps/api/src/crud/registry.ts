@@ -33,19 +33,15 @@ export class ResourceRegistry {
     const definitions = entries.map((entry) => (typeof entry === 'string' ? { model: entry } : entry))
 
     // First pass: resource names, so relations can point at each other.
-    // Models with plainForeignKeys stay numeric ids until relation dropdowns are a dedicated pass.
     const resourceNames = new Map<string, string>()
-    const linkableNames = new Map<string, string>()
     for (const definition of definitions) {
       const model = findModel(definition.model)
-      const name = kebab(model.dbName ?? model.name)
-      resourceNames.set(model.name, name)
-      if (!definition.plainForeignKeys) linkableNames.set(model.name, name)
+      resourceNames.set(model.name, kebab(model.dbName ?? model.name))
     }
 
     for (const definition of definitions) {
       const model = findModel(definition.model)
-      const resource = buildResource(definition, model, resourceNames, linkableNames)
+      const resource = buildResource(definition, model, resourceNames)
       if (this.byResource.has(resource.meta.resource)) {
         throw new Error(`Duplicate admin resource "${resource.meta.resource}"`)
       }
@@ -69,13 +65,8 @@ export class ResourceRegistry {
   }
 }
 
-function linkedResource(
-  definition: ResourceDefinition,
-  linkableNames: Map<string, string>,
-  model: string,
-): string | null {
-  if (definition.plainForeignKeys) return null
-  return linkableNames.get(model) ?? null
+function linkedResource(resourceNames: Map<string, string>, model: string): string | null {
+  return resourceNames.get(model) ?? null
 }
 
 function intEnumFor(definition: ResourceDefinition, field: string): string[] | null {
@@ -93,7 +84,6 @@ function buildResource(
   definition: ResourceDefinition,
   model: DatamodelModel,
   resourceNames: Map<string, string>,
-  linkableNames: Map<string, string>,
 ): Resource {
   const hidden = new Set<string>(definition.hidden ?? [])
   for (const name of hidden) {
@@ -131,12 +121,12 @@ function buildResource(
         hasDefault: f.hasDefaultValue,
         isUpdatedAt: f.isUpdatedAt,
         intEnum: intEnumFor(definition, f.name),
-        foreignKeyFor: fk ? { ...fk, resource: linkedResource(definition, linkableNames, fk.model) } : null,
+        foreignKeyFor: fk ? { ...fk, resource: linkedResource(resourceNames, fk.model) } : null,
         relation:
           f.kind === 'object'
             ? {
                 model: f.type,
-                resource: linkedResource(definition, linkableNames, f.type),
+                resource: linkedResource(resourceNames, f.type),
                 fromFields: f.relationFromFields,
                 toFields: f.relationToFields,
               }

@@ -67,11 +67,3 @@ export const listQuerySchema = {
     search: { type: 'string', maxLength: 200 },
   },
 } as const
-
-export const optionsQuerySchema = {
-  type: 'object',
-  properties: {
-    search: { type: 'string', maxLength: 200 },
-    ids: { type: 'string', maxLength: 2000 },
-  },
-} as const

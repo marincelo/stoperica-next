@@ -4,7 +4,7 @@ import { prisma } from '../db.js'
 import { HttpError } from '../lib/errors.js'
 import { ResourceRegistry, type Resource } from './registry.js'
 import type { ResourceEntry } from './resource.js'
-import { bodySchema, listQuerySchema, optionsQuerySchema } from './schema.js'
+import { bodySchema, listQuerySchema } from './schema.js'
 import { parseId, parseKey, toPrismaData } from './values.js'
 
 interface Delegate {
@@ -95,27 +95,16 @@ async function registerResourceRoutes(app: FastifyInstance, resource: Resource) 
     },
   )
 
-  app.get<{ Querystring: { search?: string; ids?: string } }>(
-    '/options',
-    { schema: { querystring: optionsQuerySchema } },
-    async (request): Promise<OptionItem[]> => {
-      const { search, ids } = request.query
-      const idMeta = resource.meta.fields.find((f) => f.name === idField)!
-      const where = ids
-        ? { [idField]: { in: ids.split(',').filter(Boolean).map((id) => parseKey(idMeta, id)) } }
-        : searchWhere(resource, search)
-      const rows = await db.findMany({
-        where,
-        select: { [idField]: true, [displayField]: true },
-        orderBy: { [displayField]: 'asc' },
-        take: ids ? 100 : 20,
-      })
-      return rows.map((row) => ({
-        value: row[idField] as string | number,
-        label: String(row[displayField] ?? row[idField]),
-      }))
-    },
-  )
+  app.get('/options', async (): Promise<OptionItem[]> => {
+    const rows = await db.findMany({
+      select: { [idField]: true, [displayField]: true },
+      orderBy: { [displayField]: 'asc' },
+    })
+    return rows.map((row) => ({
+      value: row[idField] as string | number,
+      label: String(row[displayField] ?? row[idField]),
+    }))
+  })
 
   app.get<{ Params: { id: string } }>('/:id', async (request) => {
     const record = await db.findUnique({

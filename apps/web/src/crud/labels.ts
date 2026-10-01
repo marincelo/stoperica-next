@@ -38,14 +38,16 @@ export const fieldLabels: Record<string, string> = {
   'StartNumber.value': 'Broj',
   'StartNumber.tagId': 'Tag',
   'StartNumber.alternateTagId': 'Alternativni tag',
-  'StartNumber.raceId': 'ID utrke',
-  'StartNumber.poolId': 'ID baze brojeva',
+  'StartNumber.raceId': 'Utrka',
+  'StartNumber.poolId': 'Baza brojeva',
 
   'RaceAdmin.racerId': 'ID natjecatelja',
-  'RaceAdmin.raceId': 'ID utrke',
+  'RaceAdmin.raceId': 'Utrka',
+
+  'League.leagueType': 'Vrsta natjecanja',
 
   'Category.name': 'Naziv',
-  'Category.raceId': 'ID utrke',
+  'Category.raceId': 'Utrka',
   'Category.category': 'Vrsta',
   'Category.trackLength': 'Duljina staze (m)',
   'Category.trackElevation': 'Uspon (m)',
