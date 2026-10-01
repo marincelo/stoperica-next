@@ -9,6 +9,7 @@ import { publicLeagueRoutes } from './public/leagues.js'
 import { clubRoutes, meRoutes } from './public/me.js'
 import { racePageCache } from './public/raceCache.js'
 import { publicRaceRoutes } from './public/races.js'
+import { deviceRoutes } from './timing/fromDevice.js'
 
 /**
  * Models exposed as generic admin CRUD. Use a bare model name, or
@@ -44,6 +45,7 @@ export const router: FastifyPluginAsync = async (app) => {
   await app.register(publicLeagueRoutes, { prefix: '/leagues' })
   await app.register(clubRoutes, { prefix: '/clubs' })
   await app.register(meRoutes, { prefix: '/me' })
+  await app.register(deviceRoutes, { prefix: '/race_results' })
 
   await app.register(
     async (admin) => {

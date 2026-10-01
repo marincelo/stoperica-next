@@ -5,8 +5,10 @@ import { env } from './env.js'
 import { HttpError, registerErrorHandler } from './lib/errors.js'
 import { stringify } from './lib/json.js'
 import { router } from './router.js'
+import { deviceRoutes } from './timing/fromDevice.js'
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
+const DEVICE_PATHS = new Set(['/api/race_results/from_device', '/api/race_results/check_token'])
 
 export async function buildApp() {
   const app = Fastify({
@@ -17,6 +19,14 @@ export async function buildApp() {
   app.setReplySerializer((payload) => stringify(payload))
   registerErrorHandler(app)
 
+  app.addContentTypeParser('application/x-www-form-urlencoded', { parseAs: 'string' }, (_request, body, done) => {
+    try {
+      done(null, Object.fromEntries(new URLSearchParams(String(body))))
+    } catch (error) {
+      done(error as Error, undefined)
+    }
+  })
+
   await app.register(cors, {
     origin: env.corsOrigins,
     credentials: true,
@@ -24,10 +34,14 @@ export async function buildApp() {
     allowedHeaders: ['content-type', 'x-stoperica-client'],
   })
 
+  // Rails path: timing boxes POST here without a session cookie.
+  await app.register(deviceRoutes, { prefix: '/race_results' })
+
   await app.register(
     async (api) => {
       // CSRF guard: cross-site forms cannot set custom headers, and CORS blocks them from other origins.
       api.addHook('onRequest', async (request) => {
+        if (DEVICE_PATHS.has(request.url.split('?')[0]!)) return
         if (!SAFE_METHODS.has(request.method) && request.headers['x-stoperica-client'] !== '1') {
           throw new HttpError(403, 'Nedostaje zaglavlje klijenta')
         }
