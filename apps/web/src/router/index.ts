@@ -22,6 +22,7 @@ export const router = createRouter({
         { path: '', name: 'races', component: () => import('@/views/public/RacesView.vue') },
         { path: 'utrke/:id(\\d+)', name: 'race', component: () => import('@/views/public/RaceView.vue') },
         { path: 'natjecatelji/:id(\\d+)', name: 'racer', component: () => import('@/views/public/RacerView.vue') },
+        { path: 'klubovi/:id(\\d+)', name: 'club', component: () => import('@/views/public/ClubView.vue') },
         { path: 'natjecanja', name: 'leagues', component: () => import('@/views/public/LeaguesView.vue') },
         { path: 'natjecanja/:slug', name: 'league', component: () => import('@/views/public/LeagueView.vue') },
         { path: 'info', name: 'info', component: () => import('@/views/public/InfoView.vue') },

@@ -15,7 +15,7 @@ export const publicRacerRoutes: FastifyPluginAsync = async (app) => {
         firstName: true,
         lastName: true,
         country: true,
-        club: { select: { name: true } },
+        club: { select: { id: true, name: true } },
         raceResults: {
           orderBy: { id: 'desc' },
           select: {
@@ -37,6 +37,7 @@ export const publicRacerRoutes: FastifyPluginAsync = async (app) => {
       lastName: racer.lastName,
       country: racer.country,
       club: racer.club?.name ?? null,
+      clubId: racer.club?.id ?? null,
       results: racer.raceResults.flatMap((row) =>
         row.race
           ? [

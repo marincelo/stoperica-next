@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { ApiError } from '@/api/http'
 import { publicApi } from '@/api/public'
+import ClubLink from '@/components/public/ClubLink.vue'
 import TrophyIcon from '@/components/public/TrophyIcon.vue'
 import { cleanTime, countryFlag, countryName } from '@/public/format'
 
@@ -67,7 +68,7 @@ const themeStyle = computed(() => ({
       </h1>
       <p class="club">
         <b>Klub:</b>
-        {{ racer.club ?? 'Nema' }}
+        <ClubLink :name="racer.club" :club-id="racer.clubId" fallback="Nema" />
       </p>
     </header>
 

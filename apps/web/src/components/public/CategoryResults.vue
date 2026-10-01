@@ -4,6 +4,7 @@ import { NTag, useThemeVars } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import BibAssign from '@/components/public/BibAssign.vue'
+import ClubLink from '@/components/public/ClubLink.vue'
 import TrophyIcon from '@/components/public/TrophyIcon.vue'
 import { cleanTime, countryFlag, countryName, racerName, statusLabel, statusType, uciRacerName } from '@/public/format'
 
@@ -105,7 +106,7 @@ const trackKm = computed(() =>
             <span v-if="r.racer.country" class="flag" :title="countryName(r.racer.country)">{{ countryFlag(r.racer.country) }}</span>
             <RouterLink :to="{ name: 'racer', params: { id: r.racer.id } }" class="name-text">{{ displayName(r) }}</RouterLink>
           </div>
-          <div class="r-club">{{ r.racer.club ?? '' }}</div>
+          <ClubLink class="r-club" :name="r.racer.club" :club-id="r.racer.clubId" />
         </div>
 
         <div class="r-meta">
@@ -240,12 +241,14 @@ const trackKm = computed(() =>
   color: inherit;
   text-decoration: none;
 }
-.name-text:hover {
+.name-text:hover,
+.r-club:hover {
   color: var(--primary);
 }
 .r-club {
   font-size: 13px;
   color: var(--muted);
+  text-decoration: none;
 }
 .r-meta {
   grid-area: meta;

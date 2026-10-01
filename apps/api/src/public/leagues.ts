@@ -39,7 +39,7 @@ const leagueSelect = {
     where: { total: { not: 0 } },
     orderBy: { total: 'desc' },
     take: 1,
-    select: { club: { select: { name: true } } },
+    select: { club: { select: { id: true, name: true } } },
   },
 } satisfies Prisma.LeagueSelect
 
@@ -79,7 +79,10 @@ function toSummary(league: LeagueRow, now: number): LeagueSummary {
     status: next ? 'active' : 'finished',
     nextRace: next ? { id: next.id, name: next.name, date: next.date?.toISOString() ?? null } : null,
     pictureUrl: cover,
-    clubLeader: league.clubLeaguePoints[0]?.club?.name ?? null,
+    clubLeader: (() => {
+      const club = league.clubLeaguePoints[0]?.club
+      return club ? { id: club.id, name: club.name } : null
+    })(),
   }
 }
 
@@ -119,7 +122,7 @@ const standingResultSelect = {
   finishTime: true,
   category: { select: { category: true, name: true } },
   racer: {
-    select: { id: true, firstName: true, lastName: true, country: true, club: { select: { name: true } } },
+    select: { id: true, firstName: true, lastName: true, country: true, club: { select: { id: true, name: true } } },
   },
 } satisfies Prisma.RaceResultSelect
 
@@ -161,6 +164,7 @@ const toRacer = (acc: RacerAccumulator): RacerStanding['racer'] => ({
   lastName: acc.racer.lastName,
   country: acc.racer.country,
   club: acc.racer.club?.name ?? null,
+  clubId: acc.racer.club?.id ?? null,
 })
 
 /** Rails `League#racers`: sum of points per category type, highest first. */
