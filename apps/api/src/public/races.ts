@@ -63,7 +63,7 @@ const resultSelect = {
   startedAt: true,
   createdAt: true,
   categoryId: true,
-  startNumber: { select: { value: true } },
+  startNumber: { select: { id: true, value: true } },
   racer: {
     select: {
       id: true,
@@ -99,6 +99,7 @@ function toResult(row: ResultRow, ctx: ResultContext): PublicResult {
     finishDelta: row.finishDelta,
     points: hasPoints ? (row.points ?? 0) + (row.additionalPoints ?? 0) : null,
     startNumber: row.startNumber?.value ?? null,
+    startNumberId: row.startNumber?.id ?? null,
     racer: {
       id: racer.id,
       firstName: racer.firstName,
