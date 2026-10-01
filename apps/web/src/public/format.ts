@@ -1,4 +1,4 @@
-import type { LeagueType, PublicResult, RaceType } from '@stoperica/shared'
+import type { LeagueType, RaceType } from '@stoperica/shared'
 
 export const LEAGUE_TYPE_LABELS: Record<LeagueType, string> = {
   xczld: 'XCZLD',
@@ -38,7 +38,7 @@ export const RACE_TYPE_LABELS: Record<RaceType, string> = {
 const FEMALE = 1
 
 /** Port of Rails `RaceResult#pretty_status`, without the XCO lap count (laps are shown as splits). */
-export function statusLabel(result: PublicResult): string {
+export function statusLabel(result: { status: number | null; racer: { gender: number | null } }): string {
   const female = result.racer.gender === FEMALE
   switch (result.status) {
     case 1:
@@ -79,6 +79,13 @@ const shortDateFormatter = new Intl.DateTimeFormat('hr-HR', { day: 'numeric', mo
 
 export const formatDateTime = (value: string | null) => (value ? dateFormatter.format(new Date(value)) : '—')
 export const formatDate = (value: string | null) => (value ? shortDateFormatter.format(new Date(value)) : '—')
+
+export const formatElapsed = (startedAt: string, now = Date.now()): string => {
+  const s = Math.max(0, Math.floor((now - Date.parse(startedAt)) / 1000))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  return `${h}:${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+}
 
 /** Stored times look like " 0:51:03"; missing ones are "- -". */
 export const cleanTime = (value: string | null) => {

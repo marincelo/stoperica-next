@@ -206,6 +206,34 @@ export interface PublicRaceDetail extends PublicRaceSummary {
   myRegistration: MyRegistration | null
 }
 
+/** Last recorded split on the live board (`RaceResult#live_time`). */
+export interface LiveTime {
+  /** Elapsed clock, or `- -` before the first split. */
+  time: string
+  /** `Finish`, `LAP n`, or the control-point name. */
+  controlPoint: string | null
+}
+
+export interface LiveResult {
+  id: number
+  status: number | null
+  startNumber: string | null
+  category: string
+  racer: PublicRacer
+  liveTime: LiveTime
+}
+
+/** Public `/live` payload. `null` when no race has `startedAt` and no `endedAt`. */
+export interface LiveRace {
+  id: number
+  name: string | null
+  startedAt: string
+  uciDisplay: boolean
+  /** Category names in schema order, for the grouped live table. */
+  categories: string[]
+  results: LiveResult[]
+}
+
 export type ShirtSize = 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL'
 
 export interface RacerProfile {

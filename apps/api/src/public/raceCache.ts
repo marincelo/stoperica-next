@@ -1,4 +1,4 @@
-import type { MyRegistration, PublicCategory, PublicRaceDetail } from '@stoperica/shared'
+import type { LiveRace, MyRegistration, PublicCategory, PublicRaceDetail } from '@stoperica/shared'
 
 /**
  * Public race page without the fields that change per visitor or as the clock
@@ -17,6 +17,19 @@ export interface RacePageCache {
 
 const pages = new Map<number, CachedRacePage>()
 
+/** Single slot: `undefined` is a miss, `{ payload: null }` is a known idle board. */
+let live: { payload: LiveRace | null } | undefined
+
+export const liveRaceCache = {
+  get: () => live,
+  set: (payload: LiveRace | null) => {
+    live = { payload }
+  },
+  invalidate: () => {
+    live = undefined
+  },
+}
+
 export const racePageCache: RacePageCache = {
   get: (raceId) => pages.get(raceId),
   set: (raceId, page) => {
@@ -24,6 +37,8 @@ export const racePageCache: RacePageCache = {
   },
   invalidate: (raceId) => {
     pages.delete(raceId)
+    // Live board is one slot; drop it on any race-page write so start/stop and laps stay fresh.
+    liveRaceCache.invalidate()
   },
 }
 

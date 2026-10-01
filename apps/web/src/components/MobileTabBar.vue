@@ -16,7 +16,7 @@ const { items, isActive } = useNavItems()
       :aria-current="isActive(item) ? 'page' : undefined"
     >
       <span class="pill">
-        <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path :d="item.icon" /></svg>
+        <svg viewBox="0 0 24 24" class="icon" :class="item.iconClass" aria-hidden="true"><path :d="item.icon" /></svg>
       </span>
       <span>{{ item.label }}</span>
     </RouterLink>
@@ -30,7 +30,7 @@ const { items, isActive } = useNavItems()
   inset: auto 0 0 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   padding-bottom: env(safe-area-inset-bottom);
   background: linear-gradient(100deg, var(--gold-1) 0%, var(--gold) 55%, var(--gold-2) 100%);
   box-shadow:
@@ -78,6 +78,9 @@ const { items, isActive } = useNavItems()
   width: 22px;
   height: 22px;
   fill: currentColor;
+}
+.icon.rec {
+  fill: #e03131;
 }
 
 @media (min-width: 768px) {
