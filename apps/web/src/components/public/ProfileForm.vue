@@ -23,6 +23,8 @@ const props = defineProps<{
   loading?: boolean
   /** Sign-up only: require accepting the data usage statement. */
   requireTerms?: boolean
+  /** Existing profile: name and club are admin-managed. */
+  lockIdentity?: boolean
 }>()
 const emit = defineEmits<{ submit: [profile: RacerProfile] }>()
 
@@ -102,10 +104,10 @@ async function submit() {
   <NForm ref="formRef" :model="form" :rules="rules" @submit.prevent="submit">
     <NGrid cols="1 s:2" responsive="screen" :x-gap="16">
       <NFormItemGi label="Ime" path="firstName">
-        <NInput v-model:value="form.firstName" :input-props="{ autocomplete: 'given-name' }" />
+        <NInput v-model:value="form.firstName" :disabled="lockIdentity" :input-props="{ autocomplete: 'given-name' }" />
       </NFormItemGi>
       <NFormItemGi label="Prezime" path="lastName">
-        <NInput v-model:value="form.lastName" :input-props="{ autocomplete: 'family-name' }" />
+        <NInput v-model:value="form.lastName" :disabled="lockIdentity" :input-props="{ autocomplete: 'family-name' }" />
       </NFormItemGi>
       <NFormItemGi label="E-mail" path="email">
         <NInput v-model:value="form.email" :input-props="{ type: 'email', autocomplete: 'email' }" />
@@ -152,7 +154,14 @@ async function submit() {
         <NSelect v-model:value="form.country" :options="countryOptions" filterable />
       </NFormItemGi>
       <NFormItemGi label="Klub" path="clubId">
-        <NSelect v-model:value="form.clubId" :options="clubOptions" filterable clearable placeholder="Bez kluba (Individual)" />
+        <NSelect
+          v-model:value="form.clubId"
+          :options="clubOptions"
+          :disabled="lockIdentity"
+          filterable
+          :clearable="!lockIdentity"
+          placeholder="Bez kluba (Individual)"
+        />
       </NFormItemGi>
       <NFormItemGi label="UCI ID (za licencirane bicikliste)" path="uciId" span="1 s:2">
         <NInput v-model:value="form.uciId" placeholder="Ostavite prazno ako nemate licencu" clearable />

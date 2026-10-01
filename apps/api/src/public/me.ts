@@ -1,7 +1,7 @@
 import type { ClubOption, RacerProfile } from '@stoperica/shared'
 import type { FastifyPluginAsync } from 'fastify'
 import { isPhoneTaken } from '../auth/credentials.js'
-import { profileSchema, toProfile, toRacerData } from '../auth/profile.js'
+import { profileSchema, toProfile, toProfileUpdateData } from '../auth/profile.js'
 import { prisma } from '../db.js'
 import { HttpError } from '../lib/errors.js'
 
@@ -49,7 +49,7 @@ export const meRoutes: FastifyPluginAsync = async (app) => {
 
     const racer = await prisma.racer.update({
       where: { id },
-      data: await toRacerData(request.body),
+      data: toProfileUpdateData(request.body),
       select: profileSelect,
     })
     return toProfile(racer)

@@ -42,29 +42,17 @@ export const signupSchema = {
   properties: { ...profileSchema.properties, termsAccepted: { type: 'boolean', const: true } },
 } as const
 
-/** Applies the Rails `before_save` rules: default club, UCI ID normalization, digits-only phone. */
-export async function toRacerData(profile: RacerProfile) {
-  let clubId = profile.clubId
-  if (clubId === null) {
-    const individual = await prisma.club.findFirst({ where: { name: DEFAULT_CLUB_NAME }, select: { id: true } })
-    clubId = individual?.id ?? null
-  } else if (!(await prisma.club.findUnique({ where: { id: clubId }, select: { id: true } }))) {
-    throw new HttpError(400, 'Odabrani klub ne postoji')
-  }
-
+function contactAndDetails(profile: RacerProfile) {
   const uciId = profile.uciId?.replace(/\s/g, '') || NO_UCI_ID
   if (uciId !== NO_UCI_ID && !/^\d{3,14}$/.test(uciId)) throw new HttpError(400, 'UCI ID mora imati 3 do 14 znamenki')
 
   return {
-    firstName: profile.firstName.trim(),
-    lastName: profile.lastName.trim(),
     email: profile.email.trim(),
     phoneNumber: profile.phoneNumber.replace(/\D/g, ''),
     gender: profile.gender,
     dayOfBirth: profile.dayOfBirth,
     monthOfBirth: profile.monthOfBirth,
     yearOfBirth: profile.yearOfBirth,
-    clubId,
     address: profile.address.trim(),
     zipCode: profile.zipCode.trim(),
     town: profile.town.trim(),
@@ -72,6 +60,32 @@ export async function toRacerData(profile: RacerProfile) {
     shirtSize: profile.shirtSize,
     uciId,
   }
+}
+
+async function resolveClubId(clubId: number | null) {
+  if (clubId === null) {
+    const individual = await prisma.club.findFirst({ where: { name: DEFAULT_CLUB_NAME }, select: { id: true } })
+    return individual?.id ?? null
+  }
+  if (!(await prisma.club.findUnique({ where: { id: clubId }, select: { id: true } }))) {
+    throw new HttpError(400, 'Odabrani klub ne postoji')
+  }
+  return clubId
+}
+
+/** Applies the Rails `before_save` rules: default club, UCI ID normalization, digits-only phone. */
+export async function toRacerData(profile: RacerProfile) {
+  return {
+    ...contactAndDetails(profile),
+    firstName: profile.firstName.trim(),
+    lastName: profile.lastName.trim(),
+    clubId: await resolveClubId(profile.clubId),
+  }
+}
+
+/** Profile edits cannot change name or club; those stay as the admin-managed identity. */
+export function toProfileUpdateData(profile: RacerProfile) {
+  return contactAndDetails(profile)
 }
 
 export function toProfile(racer: {
