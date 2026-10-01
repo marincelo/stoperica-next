@@ -30,7 +30,7 @@ const { items, isActive } = useNavItems()
   inset: auto 0 0 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   padding-bottom: env(safe-area-inset-bottom);
   background: linear-gradient(100deg, var(--gold-1) 0%, var(--gold) 55%, var(--gold-2) 100%);
   box-shadow:

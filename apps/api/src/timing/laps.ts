@@ -102,3 +102,43 @@ export function liveFinishTime(args: {
   if (index < 0) return '- -'
   return lapClock({ ...args, position: index + 1 })
 }
+
+function lastReaderId(entry: unknown): string | null {
+  if (entry && typeof entry === 'object' && 'reader_id' in entry) {
+    const value = (entry as { reader_id: unknown }).reader_id
+    return value == null ? '' : String(value)
+  }
+  return null
+}
+
+/** Rails `RaceResult#live_time` — last split clock plus CP/LAP/Finish label. */
+export function liveTime(args: {
+  laps: unknown
+  status: number | null
+  startedAt: Date | null
+  raceStartedAt: Date | null
+  millisDisplay: boolean
+  xco: boolean
+  controlPoints: unknown[]
+}): { time: string; controlPoint: string | null } {
+  const laps = asArray(args.laps)
+  if (!laps.length) return { time: '- -', controlPoint: null }
+
+  const readerId = lastReaderId(laps.at(-1))
+  let controlPoint: string | null = null
+  if (args.xco) {
+    controlPoint = `LAP ${laps.length + 1}`
+  } else if (readerId === '0') {
+    controlPoint = 'Finish'
+  } else if (readerId !== null) {
+    const index = args.controlPoints.findIndex(
+      (cp) => String((cp as { reader_id?: unknown } | null)?.reader_id ?? '') === readerId,
+    )
+    if (index >= 0) {
+      const name = (args.controlPoints[index] as { name?: unknown }).name
+      controlPoint = typeof name === 'string' && name.trim() ? name : `KT ${index + 1}`
+    }
+  }
+
+  return { time: liveFinishTime(args), controlPoint }
+}

@@ -3,6 +3,7 @@ import type {
   LeagueDetail,
   LeagueSummary,
   ListResponse,
+  LiveRace,
   MyRegistration,
   PublicRaceDetail,
   PublicRaceSummary,
@@ -15,6 +16,7 @@ export const publicApi = {
   races: (query: { scope: 'upcoming' | 'past'; page: number; pageSize?: number }) =>
     http.get<ListResponse<PublicRaceSummary>>('/races', query),
   race: (id: string | number) => http.get<PublicRaceDetail>(`/races/${id}`),
+  live: () => http.get<LiveRace | null>('/races/live'),
   racer: (id: string | number) => http.get<PublicRacerProfile>(`/racers/${id}`),
   register: (raceId: number, body: { categoryId: number; waiverAccepted?: boolean }) =>
     http.post<MyRegistration>(`/races/${raceId}/registration`, body),
