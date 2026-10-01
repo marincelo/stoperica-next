@@ -1,4 +1,4 @@
-import type { ListQuery, ListResponse, OptionItem } from '@stoperica/shared'
+import type { ListQuery, ListResponse, OptionItem, RaceStartNumberOption } from '@stoperica/shared'
 import { http } from './http'
 
 export type Row = Record<string, unknown>
@@ -12,4 +12,7 @@ export const crudApi = {
     http.patch<Row>(`/admin/${resource}/${encodeURIComponent(id)}`, data),
   remove: (resource: string, id: string) => http.delete(`/admin/${resource}/${encodeURIComponent(id)}`),
   options: (resource: string) => http.get<OptionItem[]>(`/admin/${resource}/options`),
+  raceStartNumbers: (raceId: number) => http.get<RaceStartNumberOption[]>(`/admin/races/${raceId}/start-numbers`),
+  assignStartNumber: (raceId: number, resultId: number, startNumberId: number | null) =>
+    http.patch<{ startNumberId: number | null }>(`/admin/races/${raceId}/results/${resultId}`, { startNumberId }),
 }

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import type { PublicCategory, PublicResult, RaceType } from '@stoperica/shared'
+import type { PublicCategory, PublicResult, RaceStartNumberOption, RaceType } from '@stoperica/shared'
 import { NTag, useThemeVars } from 'naive-ui'
 import { computed, ref } from 'vue'
+import BibAssign from '@/components/public/BibAssign.vue'
 import TrophyIcon from '@/components/public/TrophyIcon.vue'
 import { cleanTime, countryFlag, countryName, racerName, statusLabel, statusType, uciRacerName } from '@/public/format'
 
@@ -11,7 +12,12 @@ const props = defineProps<{
   started: boolean
   uciDisplay: boolean
   myRacerId: number | null
+  assignable?: boolean
+  startNumbers?: RaceStartNumberOption[]
+  savingResultId?: number | null
 }>()
+
+const emit = defineEmits<{ assign: [resultId: number, startNumberId: number | null] }>()
 
 const open = ref(true)
 const themeVars = useThemeVars()
@@ -25,7 +31,7 @@ type Column = { area: string; label: string; width: string; align?: 'end' }
 const columns = computed(() => {
   const cols: Column[] = []
   if (props.started) cols.push({ area: 'pos', label: 'Poz.', width: '52px' })
-  cols.push({ area: 'bib', label: 'Broj', width: '56px' })
+  cols.push({ area: 'bib', label: 'Broj', width: props.assignable ? '156px' : '56px' })
   cols.push({ area: 'name', label: 'Natjecatelj', width: 'minmax(0, 2fr)' })
   cols.push({ area: 'club', label: 'Klub', width: 'minmax(0, 1.5fr)' })
   if (props.uciDisplay) cols.push({ area: 'uci', label: 'UCI ID', width: '112px' })
@@ -103,7 +109,14 @@ const trackKm = computed(() =>
 
         <div class="r-meta">
           <span class="r-bib">
-            <template v-if="r.startNumber"><span class="narrow-only">#</span>{{ r.startNumber }}</template>
+            <BibAssign
+              v-if="assignable"
+              :model-value="r.startNumberId"
+              :options="startNumbers ?? []"
+              :loading="savingResultId === r.id"
+              @update="emit('assign', r.id, $event)"
+            />
+            <template v-else-if="r.startNumber"><span class="narrow-only">#</span>{{ r.startNumber }}</template>
           </span>
           <span v-if="uciDisplay" class="r-uci">
             <template v-if="r.racer.uciId"><span class="narrow-only">UCI </span>{{ r.racer.uciId }}</template>

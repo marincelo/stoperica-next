@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { PublicRaceDetail } from '@stoperica/shared'
-import { NButton, NCard, NDescriptions, NDescriptionsItem, NEmpty, NFlex, NGrid, NGridItem, NResult, NSpin, NTag } from 'naive-ui'
+import type { PublicRaceDetail, RaceStartNumberOption } from '@stoperica/shared'
+import { NButton, NCard, NDescriptions, NDescriptionsItem, NEmpty, NFlex, NGrid, NGridItem, NResult, NSpin, NTag, useMessage } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { crudApi } from '@/api/crud'
 import { ApiError } from '@/api/http'
 import { publicApi } from '@/api/public'
 import CategoryResults from '@/components/public/CategoryResults.vue'
@@ -14,8 +15,11 @@ import { useAuthStore } from '@/stores/auth'
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const message = useMessage()
 
 const race = ref<PublicRaceDetail | null>(null)
+const startNumbers = ref<RaceStartNumberOption[]>([])
+const savingResultId = ref<number | null>(null)
 const loading = ref(false)
 const notFound = ref(false)
 const error = ref<string | null>(null)
@@ -23,14 +27,36 @@ const error = ref<string | null>(null)
 async function load() {
   loading.value = true
   error.value = null
+  const id = String(route.params.id)
   try {
-    race.value = await publicApi.race(String(route.params.id))
+    race.value = await publicApi.race(id)
     notFound.value = false
+    if (!auth.isAdmin) startNumbers.value = []
+    if (auth.isAdmin) {
+      try {
+        startNumbers.value = await crudApi.raceStartNumbers(race.value.id)
+      } catch (e) {
+        message.error(e instanceof ApiError ? e.message : 'Popis brojeva nije učitan')
+      }
+    }
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound.value = true
     else error.value = (e as Error).message
   } finally {
     loading.value = false
+  }
+}
+
+async function assignStartNumber(resultId: number, startNumberId: number | null) {
+  if (!race.value) return
+  savingResultId.value = resultId
+  try {
+    await crudApi.assignStartNumber(race.value.id, resultId, startNumberId)
+    await load()
+  } catch (e) {
+    message.error(e instanceof ApiError ? e.message : 'Broj nije spremljen')
+  } finally {
+    savingResultId.value = null
   }
 }
 
@@ -130,6 +156,10 @@ const scrollToCategory = (id: number | null) =>
               :started="started"
               :uci-display="race.uciDisplay"
               :my-racer-id="auth.user?.id ?? null"
+              :assignable="auth.isAdmin"
+              :start-numbers="startNumbers"
+              :saving-result-id="savingResultId"
+              @assign="assignStartNumber"
             />
           </NFlex>
         </template>

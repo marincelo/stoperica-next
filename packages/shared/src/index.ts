@@ -152,8 +152,18 @@ export interface PublicResult {
   finishDelta: string | null
   points: number | null
   startNumber: string | null
+  startNumberId: number | null
   racer: PublicRacer
   splits: PublicSplit[]
+}
+
+/** A bib an admin can assign on a race page. */
+export interface RaceStartNumberOption {
+  id: number
+  /** Printed bib, e.g. "29". */
+  value: string
+  /** Another racer on this race already has this bib. */
+  takenBy: string | null
 }
 
 export interface PublicCategory {
