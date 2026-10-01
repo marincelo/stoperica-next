@@ -37,7 +37,14 @@ async function submit(value: RacerProfile) {
   <div class="center">
     <NCard title="Moj profil" style="width: 720px; max-width: 100%">
       <NSpin :show="!profile">
-        <ProfileForm v-if="profile" :initial="profile" submit-label="Spremi promjene" :loading="saving" @submit="submit" />
+        <ProfileForm
+          v-if="profile"
+          :initial="profile"
+          lock-identity
+          submit-label="Spremi promjene"
+          :loading="saving"
+          @submit="submit"
+        />
       </NSpin>
     </NCard>
   </div>
