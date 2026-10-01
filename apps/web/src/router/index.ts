@@ -20,6 +20,7 @@ export const router = createRouter({
       component: () => import('@/layouts/PublicLayout.vue'),
       children: [
         { path: '', name: 'races', component: () => import('@/views/public/RacesView.vue') },
+        { path: 'live', name: 'live', component: () => import('@/views/public/LiveView.vue') },
         { path: 'utrke/:id(\\d+)', name: 'race', component: () => import('@/views/public/RaceView.vue') },
         { path: 'natjecatelji/:id(\\d+)', name: 'racer', component: () => import('@/views/public/RacerView.vue') },
         { path: 'klubovi/:id(\\d+)', name: 'club', component: () => import('@/views/public/ClubView.vue') },
