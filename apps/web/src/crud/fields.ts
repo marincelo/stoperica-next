@@ -43,7 +43,18 @@ export function valueFields(meta: ModelMeta): FieldMeta[] {
 }
 
 export function formFields(meta: ModelMeta): FieldMeta[] {
-  return valueFields(meta).filter((f) => !f.isReadOnly)
+  return valueFields(meta).filter((f) => !f.isReadOnly && !f.isId)
+}
+
+/** Coerce a query-string / form raw value to the scalar the API expects. */
+export function coerceScalarInput(field: FieldMeta, raw: string): unknown {
+  if (field.type === 'Int' || field.type === 'BigInt') {
+    if (!/^-?\d+$/.test(raw)) return raw
+    const n = Number(raw)
+    return Number.isSafeInteger(n) ? n : raw
+  }
+  if (field.type === 'Boolean') return raw === 'true'
+  return raw
 }
 
 /** Fields that make sense as table columns. */

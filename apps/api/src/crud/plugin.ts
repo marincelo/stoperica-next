@@ -62,6 +62,15 @@ function searchWhere(resource: Resource, search: string | undefined) {
   return or.length ? { OR: or } : {}
 }
 
+function parentWhere(resource: Resource, parentField: string | undefined, parentId: string | number | undefined) {
+  if (!parentField || parentId === undefined || parentId === '') return {}
+  const field = resource.meta.fields.find((f) => f.name === parentField)
+  if (!field?.foreignKeyFor?.resource) {
+    throw new HttpError(400, `Polje "${parentField}" nije veza na drugi resurs`)
+  }
+  return { [parentField]: parseKey(field, String(parentId)) }
+}
+
 function orderBy(resource: Resource, sort: string | undefined, order: 'asc' | 'desc') {
   const field = sort ?? resource.meta.idField
   const meta = resource.meta.fields.find((f) => f.name === field)
@@ -79,8 +88,8 @@ async function registerResourceRoutes(app: FastifyInstance, resource: Resource) 
     '/',
     { schema: { querystring: listQuerySchema } },
     async (request): Promise<ListResponse> => {
-      const { page, pageSize, sort, order, search } = request.query
-      const where = searchWhere(resource, search)
+      const { page, pageSize, sort, order, search, parentField, parentId } = request.query
+      const where = { ...searchWhere(resource, search), ...parentWhere(resource, parentField, parentId) }
       const [items, total] = (await prisma.$transaction([
         db.findMany({
           where,

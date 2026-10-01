@@ -60,6 +60,20 @@ export class ResourceRegistry {
         }
       }
     }
+
+    for (const child of this.all) {
+      for (const field of child.meta.fields) {
+        const parentResource = field.foreignKeyFor?.resource
+        if (!parentResource) continue
+        const parent = this.byResource.get(parentResource)
+        if (!parent) continue
+        parent.meta.children.push({
+          resource: child.meta.resource,
+          label: child.meta.label,
+          foreignKey: field.name,
+        })
+      }
+    }
   }
 
   get all(): Resource[] {
@@ -119,7 +133,7 @@ function buildResource(
         isRequired: f.isRequired,
         isId: f.isId,
         isUnique: f.isUnique,
-        isReadOnly: f.kind === 'object' || (f.isId && f.hasDefaultValue) || isAutoTimestamp(f),
+        isReadOnly: f.kind === 'object' || f.isId || isAutoTimestamp(f),
         hasDefault: f.hasDefaultValue,
         isUpdatedAt: f.isUpdatedAt,
         intEnum: intEnumFor(definition, f.name),
@@ -180,6 +194,7 @@ function buildResource(
         Object.entries(datamodel.enums).filter(([name]) => usedEnums.has(name)),
       ),
       searchFields,
+      children: [],
     },
   }
 }

@@ -4,7 +4,7 @@ import type { Resource } from './registry.js'
 type JsonSchema = Record<string, unknown>
 
 export function writableFields(resource: Resource): FieldMeta[] {
-  return resource.meta.fields.filter((f) => f.kind !== 'object' && !f.isReadOnly)
+  return resource.meta.fields.filter((f) => f.kind !== 'object' && !f.isReadOnly && !f.isId)
 }
 
 function scalarSchema(field: FieldMeta, enums: Record<string, string[]>): JsonSchema {
@@ -61,9 +61,11 @@ export const listQuerySchema = {
   type: 'object',
   properties: {
     page: { type: 'integer', minimum: 1, default: 1 },
-    pageSize: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+    pageSize: { type: 'integer', minimum: 1, maximum: 200, default: 20 },
     sort: { type: 'string' },
     order: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
     search: { type: 'string', maxLength: 200 },
+    parentField: { type: 'string' },
+    parentId: { anyOf: [{ type: 'string' }, { type: 'integer' }] },
   },
 } as const

@@ -58,9 +58,19 @@ export interface ModelMeta {
   displayField: string
   /** Fields joined for relation/option labels. Defaults to `[displayField]`. */
   displayFields: string[]
+  /** Other admin resources that belong to this one (has-many). */
+  children: ChildResource[]
   fields: FieldMeta[]
   enums: Record<string, string[]>
   searchFields: string[]
+}
+
+/** A nested admin list on a parent show page, e.g. start numbers on a pool. */
+export interface ChildResource {
+  resource: string
+  label: string
+  /** FK on the child that points at the parent, e.g. `poolId`. */
+  foreignKey: string
 }
 
 export interface ListQuery {
@@ -69,6 +79,9 @@ export interface ListQuery {
   sort?: string
   order?: 'asc' | 'desc'
   search?: string
+  /** Limit the list to children of one parent record. */
+  parentField?: string
+  parentId?: string | number
 }
 
 export interface ListResponse<T = Record<string, unknown>> {

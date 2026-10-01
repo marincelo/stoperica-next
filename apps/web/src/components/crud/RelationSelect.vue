@@ -4,7 +4,7 @@ import { NSelect } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { crudApi } from '@/api/crud'
 
-const props = defineProps<{ resource: string; clearable?: boolean }>()
+const props = defineProps<{ resource: string; clearable?: boolean; disabled?: boolean }>()
 const model = defineModel<string | number | null>({ default: null })
 
 const options = ref<OptionItem[]>([])
@@ -26,6 +26,7 @@ onMounted(async () => {
     :options="options"
     :loading="loading"
     :clearable="clearable"
+    :disabled="disabled"
     filterable
     placeholder="Odaberi…"
   />
