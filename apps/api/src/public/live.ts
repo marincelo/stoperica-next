@@ -3,8 +3,18 @@ import { NO_UCI_ID } from '../auth/profile.js'
 import { prisma, type Prisma } from '../db.js'
 import { liveTime } from '../timing/laps.js'
 import { RACE_TYPES } from './enums.js'
+import { liveRaceCache } from './raceCache.js'
 
 const visibleRace = { OR: [{ hidden: false }, { hidden: null }] } satisfies Prisma.RaceWhereInput
+
+/** Cached until a write in this process invalidates the race page (laps, race, results, …). */
+export async function getLiveRace(): Promise<LiveRace | null> {
+  const hit = liveRaceCache.get()
+  if (hit) return hit.payload
+  const payload = await loadLiveRace()
+  liveRaceCache.set(payload)
+  return payload
+}
 
 /** The in-progress race: `startedAt` set, `endedAt` still empty. */
 export async function loadLiveRace(): Promise<LiveRace | null> {

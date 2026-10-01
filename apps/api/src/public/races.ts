@@ -12,7 +12,7 @@ import { HttpError } from '../lib/errors.js'
 import { mailer } from '../lib/mailer.js'
 import { NO_UCI_ID } from '../auth/profile.js'
 import { LEAGUE_TYPES, RACE_TYPES, RESULT_STATUS } from './enums.js'
-import { loadLiveRace } from './live.js'
+import { getLiveRace } from './live.js'
 import { presentRacePage, racePageCache, type CachedRacePage } from './raceCache.js'
 import { computeSplits } from './splits.js'
 
@@ -230,7 +230,7 @@ export const publicRaceRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  app.get('/live', async () => loadLiveRace())
+  app.get('/live', async () => getLiveRace())
 
   app.get<{ Params: { id: number } }>(
     '/:id',

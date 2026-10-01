@@ -6,7 +6,8 @@ import { RouterLink } from 'vue-router'
 import { publicApi } from '@/api/public'
 import { formatElapsed, racerName, statusLabel, uciRacerName } from '@/public/format'
 
-const POLL_MS = 20_000
+const LIVE_POLL_MS = 20_000
+const IDLE_POLL_MS = 60_000
 const OUT = new Set([4, 5, 6])
 const NO_TIME = '- -'
 
@@ -19,10 +20,36 @@ const largeView = ref(false)
 const newestFirst = ref(false)
 const now = ref(Date.now())
 
-let pollTimer: ReturnType<typeof setInterval> | undefined
+let pollTimer: ReturnType<typeof setTimeout> | undefined
 let clockTimer: ReturnType<typeof setInterval> | undefined
+let stopped = false
+let inFlight = false
+
+function pollDelay() {
+  return race.value ? LIVE_POLL_MS : IDLE_POLL_MS
+}
+
+function schedulePoll() {
+  clearTimeout(pollTimer)
+  if (stopped || document.hidden) return
+  pollTimer = setTimeout(load, pollDelay())
+}
+
+function startClock() {
+  now.value = Date.now()
+  clearInterval(clockTimer)
+  clockTimer = setInterval(() => {
+    now.value = Date.now()
+  }, 1000)
+}
+
+function stopClock() {
+  clearInterval(clockTimer)
+}
 
 async function load() {
+  if (stopped || document.hidden || inFlight) return
+  inFlight = true
   try {
     race.value = await publicApi.live()
     error.value = null
@@ -30,19 +57,32 @@ async function load() {
     error.value = (e as Error).message
   } finally {
     loading.value = false
+    inFlight = false
+    schedulePoll()
   }
 }
 
-onMounted(() => {
+function onVisibility() {
+  if (document.hidden) {
+    clearTimeout(pollTimer)
+    stopClock()
+    return
+  }
+  startClock()
   load()
-  pollTimer = setInterval(load, POLL_MS)
-  clockTimer = setInterval(() => {
-    now.value = Date.now()
-  }, 1000)
+}
+
+onMounted(() => {
+  document.addEventListener('visibilitychange', onVisibility)
+  if (document.hidden) return
+  startClock()
+  load()
 })
 onUnmounted(() => {
-  clearInterval(pollTimer)
-  clearInterval(clockTimer)
+  stopped = true
+  document.removeEventListener('visibilitychange', onVisibility)
+  clearTimeout(pollTimer)
+  stopClock()
 })
 
 const results = computed(() => race.value?.results ?? [])

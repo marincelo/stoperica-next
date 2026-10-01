@@ -58,7 +58,7 @@ const loginTarget = computed(() => ({
             :class="{ active: isActive(item) }"
             :aria-current="isActive(item) ? 'page' : undefined"
           >
-            <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path :d="item.icon" /></svg>
+            <svg viewBox="0 0 24 24" class="icon" :class="item.iconClass" aria-hidden="true"><path :d="item.icon" /></svg>
             {{ item.label }}
           </RouterLink>
         </nav>
@@ -186,6 +186,9 @@ const loginTarget = computed(() => ({
   height: 18px;
   flex-shrink: 0;
   fill: currentColor;
+}
+.icon.rec {
+  fill: #e03131;
 }
 .chevron {
   width: 16px;

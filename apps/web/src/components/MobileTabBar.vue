@@ -16,7 +16,7 @@ const { items, isActive } = useNavItems()
       :aria-current="isActive(item) ? 'page' : undefined"
     >
       <span class="pill">
-        <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path :d="item.icon" /></svg>
+        <svg viewBox="0 0 24 24" class="icon" :class="item.iconClass" aria-hidden="true"><path :d="item.icon" /></svg>
       </span>
       <span>{{ item.label }}</span>
     </RouterLink>
@@ -78,6 +78,9 @@ const { items, isActive } = useNavItems()
   width: 22px;
   height: 22px;
   fill: currentColor;
+}
+.icon.rec {
+  fill: #e03131;
 }
 
 @media (min-width: 768px) {
