@@ -3,7 +3,7 @@ import type { FieldMeta } from '@stoperica/shared'
 import { NTag, NText } from 'naive-ui'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { inputKind } from '@/crud/fields'
+import { displayFieldsOf, displayLabel, inputKind } from '@/crud/fields'
 import { useMetaStore } from '@/stores/meta'
 
 const props = defineProps<{ field: FieldMeta; row: Record<string, unknown>; compact?: boolean }>()
@@ -17,7 +17,9 @@ const relationLabel = computed(() => {
   if (!fk?.resource) return null
   const target = metaStore.byResource.get(fk.resource)
   const related = props.row[fk.field] as Record<string, unknown> | null | undefined
-  return target && related ? String(related[target.displayField] ?? value.value) : String(value.value)
+  return target && related
+    ? displayLabel(related, displayFieldsOf(target), value.value)
+    : String(value.value)
 })
 
 const formatted = computed(() => {

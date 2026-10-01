@@ -2,6 +2,7 @@ import type { ListQuery, ListResponse, OptionItem } from '@stoperica/shared'
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify'
 import { prisma } from '../db.js'
 import { HttpError } from '../lib/errors.js'
+import { displayLabel } from './label.js'
 import { ResourceRegistry, type Resource } from './registry.js'
 import type { ResourceEntry } from './resource.js'
 import { bodySchema, listQuerySchema } from './schema.js'
@@ -61,6 +62,15 @@ function searchWhere(resource: Resource, search: string | undefined) {
   return or.length ? { OR: or } : {}
 }
 
+function parentWhere(resource: Resource, parentField: string | undefined, parentId: string | number | undefined) {
+  if (!parentField || parentId === undefined || parentId === '') return {}
+  const field = resource.meta.fields.find((f) => f.name === parentField)
+  if (!field?.foreignKeyFor?.resource) {
+    throw new HttpError(400, `Polje "${parentField}" nije veza na drugi resurs`)
+  }
+  return { [parentField]: parseKey(field, String(parentId)) }
+}
+
 function orderBy(resource: Resource, sort: string | undefined, order: 'asc' | 'desc') {
   const field = sort ?? resource.meta.idField
   const meta = resource.meta.fields.find((f) => f.name === field)
@@ -72,14 +82,14 @@ function orderBy(resource: Resource, sort: string | undefined, order: 'asc' | 'd
 
 async function registerResourceRoutes(app: FastifyInstance, resource: Resource) {
   const db = delegateFor(resource)
-  const { idField, displayField } = resource.meta
+  const { idField, displayFields } = resource.meta
 
   app.get<{ Querystring: Required<Pick<ListQuery, 'page' | 'pageSize' | 'order'>> & ListQuery }>(
     '/',
     { schema: { querystring: listQuerySchema } },
     async (request): Promise<ListResponse> => {
-      const { page, pageSize, sort, order, search } = request.query
-      const where = searchWhere(resource, search)
+      const { page, pageSize, sort, order, search, parentField, parentId } = request.query
+      const where = { ...searchWhere(resource, search), ...parentWhere(resource, parentField, parentId) }
       const [items, total] = (await prisma.$transaction([
         db.findMany({
           where,
@@ -97,12 +107,12 @@ async function registerResourceRoutes(app: FastifyInstance, resource: Resource) 
 
   app.get('/options', async (): Promise<OptionItem[]> => {
     const rows = await db.findMany({
-      select: { [idField]: true, [displayField]: true },
-      orderBy: { [displayField]: 'asc' },
+      select: Object.fromEntries([idField, ...displayFields].map((name) => [name, true])),
+      orderBy: displayFields.map((name) => ({ [name]: 'asc' as const })),
     })
     return rows.map((row) => ({
       value: row[idField] as string | number,
-      label: String(row[displayField] ?? row[idField]),
+      label: displayLabel(row, displayFields, row[idField]),
     }))
   })
 

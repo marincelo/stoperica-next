@@ -54,8 +54,24 @@ export class ResourceRegistry {
         if (field.kind !== 'object' || field.isList || !field.relation?.resource) continue
         const target = this.byModel.get(field.relation.model)!
         resource.labelIncludes[field.name] = {
-          select: { [target.meta.idField]: true, [target.meta.displayField]: true },
+          select: Object.fromEntries(
+            [target.meta.idField, ...target.meta.displayFields].map((name) => [name, true as const]),
+          ),
         }
+      }
+    }
+
+    for (const child of this.all) {
+      for (const field of child.meta.fields) {
+        const parentResource = field.foreignKeyFor?.resource
+        if (!parentResource) continue
+        const parent = this.byResource.get(parentResource)
+        if (!parent) continue
+        parent.meta.children.push({
+          resource: child.meta.resource,
+          label: child.meta.label,
+          foreignKey: field.name,
+        })
       }
     }
   }
@@ -117,7 +133,7 @@ function buildResource(
         isRequired: f.isRequired,
         isId: f.isId,
         isUnique: f.isUnique,
-        isReadOnly: f.kind === 'object' || (f.isId && f.hasDefaultValue) || isAutoTimestamp(f),
+        isReadOnly: f.kind === 'object' || f.isId || isAutoTimestamp(f),
         hasDefault: f.hasDefaultValue,
         isUpdatedAt: f.isUpdatedAt,
         intEnum: intEnumFor(definition, f.name),
@@ -140,6 +156,13 @@ function buildResource(
       fields.some((f) => f.name === name && f.kind === 'scalar' && f.type === 'String'),
     ) ??
     idField.name
+
+  const displayFields = [...(definition.displayFields ?? [displayField])]
+  for (const name of displayFields) {
+    if (!fields.some((f) => f.name === name && f.kind === 'scalar')) {
+      throw new Error(`Display field "${name}" does not exist on model ${model.name}`)
+    }
+  }
 
   const searchFields = fields
     .filter(
@@ -165,11 +188,13 @@ function buildResource(
       label: definition.label ?? model.name,
       idField: idField.name,
       displayField,
+      displayFields,
       fields,
       enums: Object.fromEntries(
         Object.entries(datamodel.enums).filter(([name]) => usedEnums.has(name)),
       ),
       searchFields,
+      children: [],
     },
   }
 }

@@ -3,8 +3,9 @@ import { NButton, NCard, NDescriptions, NDescriptionsItem, NFlex, NPopconfirm, N
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { crudApi, type Row } from '@/api/crud'
+import ChildTable from '@/components/crud/ChildTable.vue'
 import FieldValue from '@/components/crud/FieldValue.vue'
-import { valueFields } from '@/crud/fields'
+import { displayFieldsOf, displayLabel, valueFields } from '@/crud/fields'
 import { fieldLabel } from '@/crud/labels'
 import { useResourceMeta } from '@/crud/useResourceMeta'
 
@@ -18,8 +19,8 @@ const record = ref<Row | null>(null)
 const loading = ref(false)
 
 const title = computed(() => {
-  const label = record.value?.[meta.value.displayField]
-  return label ? String(label) : `${meta.value.label} #${id.value}`
+  if (!record.value) return meta.value.label
+  return displayLabel(record.value, displayFieldsOf(meta.value), `${meta.value.label} #${id.value}`)
 })
 
 async function load() {
@@ -49,27 +50,31 @@ watch([resource, id], load, { immediate: true })
 
 <template>
   <NSpin :show="loading">
-    <NCard :title="title">
-      <template #header-extra>
-        <NFlex :size="8">
-          <NButton @click="router.push({ name: 'resource-list', params: { resource } })">Natrag</NButton>
-          <NButton type="primary" @click="router.push({ name: 'resource-edit', params: { resource, id } })">
-            Uredi
-          </NButton>
-          <NPopconfirm positive-text="Obriši" negative-text="Odustani" @positive-click="remove">
-            <template #trigger>
-              <NButton type="error" secondary>Obriši</NButton>
-            </template>
-            Sigurno obrisati ovaj zapis?
-          </NPopconfirm>
-        </NFlex>
-      </template>
+    <NFlex vertical :size="16">
+      <NCard :title="title">
+        <template #header-extra>
+          <NFlex :size="8">
+            <NButton @click="router.push({ name: 'resource-list', params: { resource } })">Natrag</NButton>
+            <NButton type="primary" @click="router.push({ name: 'resource-edit', params: { resource, id } })">
+              Uredi
+            </NButton>
+            <NPopconfirm positive-text="Obriši" negative-text="Odustani" @positive-click="remove">
+              <template #trigger>
+                <NButton type="error" secondary>Obriši</NButton>
+              </template>
+              Sigurno obrisati ovaj zapis?
+            </NPopconfirm>
+          </NFlex>
+        </template>
 
-      <NDescriptions v-if="record" :column="1" label-placement="left" bordered label-style="width: 240px">
-        <NDescriptionsItem v-for="field in valueFields(meta)" :key="field.name" :label="fieldLabel(meta.name, field.name)">
-          <FieldValue :field="field" :row="record" />
-        </NDescriptionsItem>
-      </NDescriptions>
-    </NCard>
+        <NDescriptions v-if="record" :column="1" label-placement="left" bordered label-style="width: 240px">
+          <NDescriptionsItem v-for="field in valueFields(meta)" :key="field.name" :label="fieldLabel(meta.name, field.name)">
+            <FieldValue :field="field" :row="record" />
+          </NDescriptionsItem>
+        </NDescriptions>
+      </NCard>
+
+      <ChildTable v-for="child in meta.children" :key="child.resource + child.foreignKey" :child="child" :parent-id="id" />
+    </NFlex>
   </NSpin>
 </template>

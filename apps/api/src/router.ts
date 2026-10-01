@@ -3,8 +3,17 @@ import { raceResultRoutes } from './admin/raceResults.js'
 import { crudPlugin } from './crud/plugin.js'
 import { resource, type ResourceEntry } from './crud/resource.js'
 import { exportRoutes } from './exports/routes.js'
-import { CATEGORY_LABELS, LEAGUE_TYPE_LABELS, RACE_TYPE_LABELS } from './public/enums.js'
-import { invalidateCategoryRace, invalidateStartNumberRaces, rememberCategoryRace, rememberStartNumberRaces } from './public/invalidateRacePage.js'
+import { CATEGORY_LABELS, CLUB_CATEGORY_LABELS, GENDER_LABELS, LEAGUE_TYPE_LABELS, RACE_TYPE_LABELS } from './public/enums.js'
+import {
+  invalidateCategoryRace,
+  invalidateClubRaces,
+  invalidateRacerRaces,
+  invalidateStartNumberRaces,
+  rememberCategoryRace,
+  rememberClubRaces,
+  rememberRacerRaces,
+  rememberStartNumberRaces,
+} from './public/invalidateRacePage.js'
 import { publicLeagueRoutes } from './public/leagues.js'
 import { clubRoutes, meRoutes } from './public/me.js'
 import { racePageCache } from './public/raceCache.js'
@@ -23,6 +32,20 @@ const adminResources: ResourceEntry[] = [
     afterWrite: (id) => racePageCache.invalidate(Number(id)),
   }),
   resource('League', { label: 'Natjecanja', intEnums: { leagueType: LEAGUE_TYPE_LABELS } }),
+  resource('Club', {
+    label: 'Klubovi',
+    intEnums: { category: CLUB_CATEGORY_LABELS },
+    beforeWrite: (id) => rememberClubRaces(Number(id)),
+    afterWrite: (id) => invalidateClubRaces(Number(id)),
+  }),
+  resource('Racer', {
+    label: 'Natjecatelji',
+    displayField: 'lastName',
+    displayFields: ['lastName', 'firstName'],
+    intEnums: { gender: GENDER_LABELS },
+    beforeWrite: (id) => rememberRacerRaces(Number(id)),
+    afterWrite: (id) => invalidateRacerRaces(Number(id)),
+  }),
   resource('Pool', { label: 'Baze brojeva' }),
   resource('StartNumber', {
     label: 'Startni brojevi',

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { FieldMeta } from '@stoperica/shared'
 import type { FormInst, FormRules } from 'naive-ui'
 import { NButton, NCard, NFlex, NForm, NFormItem, NSpin, useMessage } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
@@ -6,8 +7,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { ApiError } from '@/api/http'
 import { crudApi, type Row } from '@/api/crud'
 import FieldInput from '@/components/crud/FieldInput.vue'
-import { emptyFormValue, formFields, fromFormValue, isRequiredInput, toFormValue } from '@/crud/fields'
+import { coerceScalarInput, emptyFormValue, formFields, fromFormValue, isRequiredInput, toFormValue } from '@/crud/fields'
 import { fieldLabel } from '@/crud/labels'
+import { parentShowLocation } from '@/crud/parent'
 import { useResourceMeta } from '@/crud/useResourceMeta'
 
 const { resource, meta } = useResourceMeta()
@@ -19,11 +21,28 @@ const id = computed(() => (route.params.id ? String(route.params.id) : null))
 const isEdit = computed(() => id.value !== null)
 const fields = computed(() => formFields(meta.value))
 
+/** When opened from a parent show page, lock the FK so the child stays attached. */
+const parentContext = computed(() => {
+  for (const field of meta.value.fields) {
+    const parentResource = field.foreignKeyFor?.resource
+    if (!parentResource) continue
+    const raw = route.query[field.name]
+    const value = Array.isArray(raw) ? raw[0] : raw
+    if (typeof value !== 'string' || value === '') continue
+    return { field, parentResource, parentId: value }
+  }
+  return null
+})
+
 const formRef = ref<FormInst | null>(null)
 const form = ref<Record<string, unknown>>({})
 const initial = ref<Record<string, string>>({})
 const loading = ref(false)
 const saving = ref(false)
+
+function isLocked(field: FieldMeta) {
+  return parentContext.value?.field.name === field.name
+}
 
 const rules = computed<FormRules>(() =>
   Object.fromEntries(
@@ -48,6 +67,10 @@ function fillForm(record: Row | null) {
   for (const field of fields.value) {
     values[field.name] = record ? toFormValue(field, record[field.name]) : emptyFormValue(field)
   }
+  if (!record && parentContext.value) {
+    const { field, parentId } = parentContext.value
+    values[field.name] = coerceScalarInput(field, parentId)
+  }
   form.value = values
   initial.value = Object.fromEntries(Object.entries(values).map(([k, v]) => [k, snapshot(v)]))
 }
@@ -64,13 +87,18 @@ async function load() {
   }
 }
 
-watch([resource, id], load, { immediate: true })
+watch(
+  [resource, id, () => parentContext.value?.field.name, () => parentContext.value?.parentId],
+  load,
+  { immediate: true },
+)
 
 function buildPayload(): Row {
   const payload: Row = {}
   for (const field of fields.value) {
     const value = form.value[field.name]
     // On edit, send only changed fields so concurrent edits of other fields are not overwritten.
+    // Locked parent FKs are still sent on create so the child is attached.
     if (isEdit.value && snapshot(value) === initial.value[field.name]) continue
     try {
       payload[field.name] = fromFormValue(field, value)
@@ -79,6 +107,15 @@ function buildPayload(): Row {
     }
   }
   return payload
+}
+
+function returnLocation(savedId?: string) {
+  if (parentContext.value) {
+    return parentShowLocation(parentContext.value.parentResource, parentContext.value.parentId)
+  }
+  if (savedId) return { name: 'resource-show' as const, params: { resource: resource.value, id: savedId } }
+  if (isEdit.value) return { name: 'resource-show' as const, params: { resource: resource.value, id: id.value! } }
+  return { name: 'resource-list' as const, params: { resource: resource.value } }
 }
 
 async function submit() {
@@ -100,7 +137,7 @@ async function submit() {
       ? await crudApi.update(resource.value, id.value!, payload)
       : await crudApi.create(resource.value, payload)
     message.success('Spremljeno')
-    router.push({ name: 'resource-show', params: { resource: resource.value, id: String(saved[meta.value.idField]) } })
+    router.push(returnLocation(String(saved[meta.value.idField])))
   } catch (error) {
     const details = error instanceof ApiError && Array.isArray(error.details) ? error.details : []
     const fieldErrors = details
@@ -113,8 +150,7 @@ async function submit() {
 }
 
 function cancel() {
-  if (isEdit.value) router.push({ name: 'resource-show', params: { resource: resource.value, id: id.value! } })
-  else router.push({ name: 'resource-list', params: { resource: resource.value } })
+  router.push(returnLocation())
 }
 </script>
 
@@ -132,7 +168,12 @@ function cancel() {
         @submit.prevent="submit"
       >
         <NFormItem v-for="field in fields" :key="field.name" :path="field.name" :label="fieldLabel(meta.name, field.name)">
-          <FieldInput v-model="form[field.name]" :field="field" :enum-values="meta.enums[field.type]" />
+          <FieldInput
+            v-model="form[field.name]"
+            :field="field"
+            :enum-values="meta.enums[field.type]"
+            :disabled="isLocked(field)"
+          />
         </NFormItem>
         <NFlex justify="end" :size="8">
           <NButton @click="cancel">Odustani</NButton>
