@@ -6,6 +6,7 @@ import type {
   MyRegistration,
   PublicRaceDetail,
   PublicRaceSummary,
+  PublicRacerProfile,
   RacerProfile,
 } from '@stoperica/shared'
 import { http } from './http'
@@ -14,6 +15,7 @@ export const publicApi = {
   races: (query: { scope: 'upcoming' | 'past'; page: number; pageSize?: number }) =>
     http.get<ListResponse<PublicRaceSummary>>('/races', query),
   race: (id: string | number) => http.get<PublicRaceDetail>(`/races/${id}`),
+  racer: (id: string | number) => http.get<PublicRacerProfile>(`/racers/${id}`),
   register: (raceId: number, body: { categoryId: number; waiverAccepted?: boolean }) =>
     http.post<MyRegistration>(`/races/${raceId}/registration`, body),
   cancelRegistration: (raceId: number) => http.delete(`/races/${raceId}/registration`),

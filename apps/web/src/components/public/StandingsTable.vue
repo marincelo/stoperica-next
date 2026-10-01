@@ -2,6 +2,8 @@
 import type { LeagueRace, StandingValues } from '@stoperica/shared'
 import { useThemeVars } from 'naive-ui'
 import { computed, ref } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import TrophyIcon from '@/components/public/TrophyIcon.vue'
 
 export interface StandingRowView extends StandingValues {
@@ -11,6 +13,7 @@ export interface StandingRowView extends StandingValues {
   flag?: string
   flagTitle?: string
   mine?: boolean
+  to?: RouteLocationRaw
 }
 
 const props = defineProps<{
@@ -65,7 +68,15 @@ const roundPlaceholder = (race: LeagueRace) => (race.status === 'finished' ? 'â€
           class="row"
           :class="{ mine: row.mine, open: expanded.has(row.key), podium: row.place <= 3 }"
         >
-          <button type="button" class="row-main" :aria-expanded="expanded.has(row.key)" @click="toggle(row.key)">
+          <div
+            class="row-main"
+            role="button"
+            :aria-expanded="expanded.has(row.key)"
+            tabindex="0"
+            @click="toggle(row.key)"
+            @keydown.enter.prevent="toggle(row.key)"
+            @keydown.space.prevent="toggle(row.key)"
+          >
             <span class="c-place">
               <span class="place">{{ row.place }}</span>
               <TrophyIcon v-if="medal(row.place)" :place="medal(row.place)!" />
@@ -73,7 +84,8 @@ const roundPlaceholder = (race: LeagueRace) => (race.status === 'finished' ? 'â€
             <span class="c-name">
               <span class="title">
                 <span v-if="row.flag" class="flag" :title="row.flagTitle">{{ row.flag }}</span>
-                <span class="title-text">{{ row.title }}</span>
+                <RouterLink v-if="row.to" :to="row.to" class="title-text" @click.stop>{{ row.title }}</RouterLink>
+                <span v-else class="title-text">{{ row.title }}</span>
               </span>
               <span v-if="row.subtitle" class="subtitle">{{ row.subtitle }}</span>
             </span>
@@ -89,7 +101,7 @@ const roundPlaceholder = (race: LeagueRace) => (race.status === 'finished' ? 'â€
             <span class="c-total">{{ row.total }}</span>
             <span class="c-gap">{{ row.gap ?? '' }}</span>
             <span class="chevron narrow-only" aria-hidden="true">â–¾</span>
-          </button>
+          </div>
 
           <ol v-if="expanded.has(row.key)" class="rounds narrow-only">
             <li v-for="(value, i) in row.rounds" :key="races[i]?.id ?? i" :class="{ empty: value === null }">
@@ -166,6 +178,16 @@ const roundPlaceholder = (race: LeagueRace) => (race.status === 'finished' ? 'â€
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.title-text {
+  color: inherit;
+  text-decoration: none;
+}
+a.title-text {
+  cursor: pointer;
+}
+a.title-text:hover {
+  color: var(--primary);
 }
 .subtitle {
   font-size: 12px;

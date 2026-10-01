@@ -70,6 +70,7 @@ const racerRows = computed<StandingRowView[]>(() =>
     flag: countryFlag(row.racer.country),
     flagTitle: countryName(row.racer.country),
     mine: row.racer.id === auth.user?.id,
+    to: { name: 'racer', params: { id: row.racer.id } },
   })),
 )
 const clubRows = computed<StandingRowView[]>(() =>

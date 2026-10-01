@@ -285,3 +285,22 @@ export interface ClubOption {
   id: number
   name: string
 }
+
+/** Public racer page. Contact, address, birth date and UCI ID stay private. */
+export interface PublicRacerProfile {
+  id: number
+  firstName: string | null
+  lastName: string | null
+  country: string | null
+  club: string | null
+  results: PublicRacerRaceResult[]
+}
+
+export interface PublicRacerRaceResult {
+  id: number
+  position: number | null
+  status: number | null
+  finishTime: string | null
+  categoryName: string | null
+  race: { id: number; name: string | null }
+}

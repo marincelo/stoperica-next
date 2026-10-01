@@ -8,6 +8,7 @@ import { invalidateCategoryRace, invalidateStartNumberRaces, rememberCategoryRac
 import { publicLeagueRoutes } from './public/leagues.js'
 import { clubRoutes, meRoutes } from './public/me.js'
 import { racePageCache } from './public/raceCache.js'
+import { publicRacerRoutes } from './public/racers.js'
 import { publicRaceRoutes } from './public/races.js'
 import { deviceRoutes } from './timing/fromDevice.js'
 
@@ -42,6 +43,7 @@ export const router: FastifyPluginAsync = async (app) => {
   app.get('/health', async () => ({ ok: true }))
 
   await app.register(publicRaceRoutes, { prefix: '/races' })
+  await app.register(publicRacerRoutes, { prefix: '/racers' })
   await app.register(publicLeagueRoutes, { prefix: '/leagues' })
   await app.register(clubRoutes, { prefix: '/clubs' })
   await app.register(meRoutes, { prefix: '/me' })
