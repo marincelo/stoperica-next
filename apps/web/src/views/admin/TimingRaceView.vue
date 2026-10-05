@@ -425,11 +425,12 @@ function hitLabel(hit: TimingRacerHit) {
                 </td>
                 <td class="when">{{ result.startedAt ? formatDateTime(result.startedAt) : '—' }}</td>
                 <td>
-                  <LapTimesEditor
-                    :laps="result.laps"
-                    :saving="savingId === result.id"
-                    @save="saveLaps(result, $event)"
-                  />
+                <LapTimesEditor
+                  :laps="result.laps"
+                  :start-at="result.startedAt ?? race.startedAt"
+                  :saving="savingId === result.id"
+                  @save="saveLaps(result, $event)"
+                />
                 </td>
                 <td>
                   <NPopconfirm positive-text="Odjavi" negative-text="Odustani" @positive-click="unregister(result)">
