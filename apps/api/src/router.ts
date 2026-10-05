@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify'
+import { leagueClubRoutes } from './admin/leagueClubs.js'
 import { raceResultRoutes } from './admin/raceResults.js'
 import { timingRoutes } from './admin/timing.js'
 import { crudPlugin } from './crud/plugin.js'
@@ -78,6 +79,7 @@ export const router: FastifyPluginAsync = async (app) => {
     async (admin) => {
       admin.addHook('onRequest', app.requireAdmin)
       await admin.register(crudPlugin, { resources: adminResources })
+      await admin.register(leagueClubRoutes, { prefix: '/leagues' })
       await admin.register(exportRoutes, { prefix: '/exports' })
       await admin.register(raceResultRoutes)
       await admin.register(timingRoutes, { prefix: '/timing' })

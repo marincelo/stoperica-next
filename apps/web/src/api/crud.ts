@@ -12,6 +12,9 @@ export const crudApi = {
     http.patch<Row>(`/admin/${resource}/${encodeURIComponent(id)}`, data),
   remove: (resource: string, id: string) => http.delete(`/admin/${resource}/${encodeURIComponent(id)}`),
   options: (resource: string) => http.get<OptionItem[]>(`/admin/${resource}/options`),
+  leagueClubs: (id: string) => http.get<{ clubIds: number[] }>(`/admin/leagues/${encodeURIComponent(id)}/clubs`),
+  saveLeagueClubs: (id: string, clubIds: number[]) =>
+    http.put<{ clubIds: number[] }>(`/admin/leagues/${encodeURIComponent(id)}/clubs`, { clubIds }),
   raceStartNumbers: (raceId: number) => http.get<RaceStartNumberOption[]>(`/admin/races/${raceId}/start-numbers`),
   assignStartNumber: (raceId: number, resultId: number, startNumberId: number | null) =>
     http.patch<{ startNumberId: number | null }>(`/admin/races/${raceId}/results/${resultId}`, { startNumberId }),

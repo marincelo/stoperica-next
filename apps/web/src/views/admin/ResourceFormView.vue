@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FieldMeta } from '@stoperica/shared'
 import type { FormInst, FormRules } from 'naive-ui'
-import { NButton, NCard, NFlex, NForm, NFormItem, NSpin, useMessage } from 'naive-ui'
+import { NButton, NCard, NFlex, NForm, NFormItem, NSelect, NSpin, useMessage } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError } from '@/api/http'
@@ -39,6 +39,13 @@ const form = ref<Record<string, unknown>>({})
 const initial = ref<Record<string, string>>({})
 const loading = ref(false)
 const saving = ref(false)
+const isLeague = computed(() => meta.value?.name === 'League')
+const clubIds = ref<number[]>([])
+const initialClubs = ref('')
+const clubOptions = ref<{ label: string; value: number }[]>([])
+const clubsLoading = ref(false)
+
+const clubKey = (ids: number[]) => JSON.stringify([...ids].sort((a, b) => a - b))
 
 function isLocked(field: FieldMeta) {
   return parentContext.value?.field.name === field.name
@@ -75,11 +82,34 @@ function fillForm(record: Row | null) {
   initial.value = Object.fromEntries(Object.entries(values).map(([k, v]) => [k, snapshot(v)]))
 }
 
+async function loadClubs(leagueId: string | null) {
+  if (!isLeague.value) return
+  clubsLoading.value = true
+  try {
+    const [options, current] = await Promise.all([
+      crudApi.options('clubs'),
+      leagueId ? crudApi.leagueClubs(leagueId) : Promise.resolve({ clubIds: [] as number[] }),
+    ])
+    clubOptions.value = options.map((option) => ({ label: option.label, value: Number(option.value) }))
+    clubIds.value = current.clubIds
+    initialClubs.value = clubKey(current.clubIds)
+  } catch (error) {
+    message.error((error as Error).message)
+  } finally {
+    clubsLoading.value = false
+  }
+}
+
 async function load() {
-  if (!isEdit.value) return fillForm(null)
+  if (!isEdit.value) {
+    fillForm(null)
+    await loadClubs(null)
+    return
+  }
   loading.value = true
   try {
     fillForm(await crudApi.get(resource.value, id.value!))
+    await loadClubs(id.value)
   } catch (error) {
     message.error((error as Error).message)
   } finally {
@@ -134,8 +164,13 @@ async function submit() {
   saving.value = true
   try {
     const saved = isEdit.value
-      ? await crudApi.update(resource.value, id.value!, payload)
+      ? Object.keys(payload).length
+        ? await crudApi.update(resource.value, id.value!, payload)
+        : ({ [meta.value.idField]: id.value } as Row)
       : await crudApi.create(resource.value, payload)
+    if (isLeague.value && clubKey(clubIds.value) !== initialClubs.value) {
+      await crudApi.saveLeagueClubs(String(saved[meta.value.idField]), clubIds.value)
+    }
     message.success('Spremljeno')
     router.push(returnLocation(String(saved[meta.value.idField])))
   } catch (error) {
@@ -175,6 +210,20 @@ function cancel() {
             :disabled="isLocked(field)"
           />
         </NFormItem>
+        <NFormItem v-if="isLeague" label="Klubovi">
+          <div class="clubs">
+            <NSelect
+              v-model:value="clubIds"
+              multiple
+              filterable
+              :options="clubOptions"
+              :loading="clubsLoading"
+              :max-tag-count="8"
+              placeholder="Odaberi klubove…"
+            />
+            <p class="hint">Uklanjanje kluba briše i njegove bodove u ovom natjecanju.</p>
+          </div>
+        </NFormItem>
         <NFlex justify="end" :size="8">
           <NButton @click="cancel">Odustani</NButton>
           <NButton type="primary" attr-type="submit" :loading="saving">Spremi</NButton>
@@ -183,3 +232,14 @@ function cancel() {
     </NCard>
   </NSpin>
 </template>
+
+<style scoped>
+.clubs {
+  width: 100%;
+}
+.hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+</style>
