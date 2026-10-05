@@ -17,6 +17,10 @@ function asArray(raw: unknown): unknown[] {
 
 function entryTime(entry: unknown): number | null {
   if (typeof entry === 'number' && Number.isFinite(entry)) return entry
+  if (typeof entry === 'string' && entry.trim() !== '') {
+    const seconds = Number(entry)
+    return Number.isFinite(seconds) ? seconds : null
+  }
   if (entry && typeof entry === 'object' && 'time' in entry) {
     const seconds = Number((entry as { time: unknown }).time)
     return Number.isFinite(seconds) ? seconds : null
@@ -67,6 +71,11 @@ function lapMillis(laps: unknown[], position: number | null, xco: boolean): numb
   if (xco && position === null) return controlPointMillis(laps, null)
   if (position === null) return controlPointMillis(laps, '0') ?? controlPointMillis(laps, null)
   return entryTime(laps[position - 1])
+}
+
+/** Rails `lap_millis` with no lap argument: last lap for XCO, finish reader otherwise. */
+export function finishEpoch(laps: unknown, xco: boolean): number | null {
+  return lapMillis(asArray(laps), null, xco)
 }
 
 export function lapClock(args: {
