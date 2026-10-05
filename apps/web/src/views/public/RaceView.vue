@@ -119,6 +119,9 @@ const scrollToCategory = (id: number | null) =>
                   Lokacija
                 </NButton>
                 <RaceExportMenu v-if="auth.isAdmin" :race-id="race.id" />
+                <NButton v-if="auth.isAdmin" type="primary" @click="router.push({ name: 'timing-race', params: { raceId: race.id } })">
+                  Mjerenje
+                </NButton>
               </NFlex>
               <p v-if="description" class="description">{{ description }}</p>
             </NFlex>

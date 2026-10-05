@@ -351,6 +351,74 @@ export interface PublicRacerRaceResult {
   race: { id: number; name: string | null }
 }
 
+/** One stored `lap_times` entry. `time` is Unix seconds, as written by the timing box. */
+export interface TimingLap {
+  time: number
+  readerId: string
+}
+
+export interface TimingRacer {
+  id: number
+  firstName: string | null
+  lastName: string | null
+  /** 1 = female, 2 = male */
+  gender: number | null
+  country: string | null
+  club: string | null
+}
+
+export interface TimingResult {
+  id: number
+  status: number | null
+  startedAt: string | null
+  startNumberId: number | null
+  categoryId: number | null
+  laps: TimingLap[]
+  racer: TimingRacer | null
+}
+
+export interface TimingCategory {
+  id: number
+  name: string | null
+  /** Set when every result in the category shares one `startedAt`. */
+  startedAt: string | null
+  /** At least two different start times, or only some results have been started. */
+  mixedStart: boolean
+  count: number
+}
+
+export interface TimingCounts {
+  total: number
+  registered: number
+  atStart: number
+  finished: number
+  dnf: number
+  dsq: number
+  dns: number
+  missingBib: number
+}
+
+/** Admin timing desk for one race. */
+export interface TimingRace {
+  id: number
+  name: string | null
+  date: string | null
+  startedAt: string | null
+  endedAt: string | null
+  counts: TimingCounts
+  categories: TimingCategory[]
+  results: TimingResult[]
+}
+
+export interface TimingRaceSummary {
+  id: number
+  name: string | null
+  date: string | null
+  startedAt: string | null
+  endedAt: string | null
+  registeredCount: number
+}
+
 /** Public club page. */
 export interface PublicClubMember {
   id: number
