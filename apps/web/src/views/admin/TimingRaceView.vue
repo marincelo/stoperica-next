@@ -29,12 +29,11 @@ const startNumbers = ref<RaceStartNumberOption[]>([])
 const loading = ref(true)
 const refreshing = ref(false)
 const notFound = ref(false)
-const categoryId = ref<number | 'all'>('all')
 const query = ref('')
 const now = ref(Date.now())
 const savingId = ref<number | null>(null)
-const startingId = ref<number | null>(null)
-const showRegister = ref(false)
+const selectedIds = ref<number[]>([])
+const starting = ref(false)
 const racerQuery = ref('')
 const racerHits = ref<TimingRacerHit[]>([])
 const pickedRacer = ref<TimingRacerHit | null>(null)
@@ -60,6 +59,10 @@ async function load() {
     const [board, numbers] = await Promise.all([timingApi.race(id), crudApi.raceStartNumbers(id)])
     race.value = board
     startNumbers.value = numbers
+    selectedIds.value = selectedIds.value.filter((id) => {
+      const category = board.categories.find((item) => item.id === id)
+      return category !== undefined && !categoryStarted(category)
+    })
     notFound.value = false
     if (registerCategoryId.value === null) registerCategoryId.value = board.categories[0]?.id ?? null
   } catch (error) {
@@ -73,7 +76,7 @@ async function load() {
 
 watch(raceId, () => {
   race.value = null
-  categoryId.value = 'all'
+  selectedIds.value = []
   query.value = ''
   load()
 })
@@ -116,11 +119,14 @@ function nameOf(result: TimingResult) {
   return [last, racer.firstName].filter(Boolean).join(' ') || '—'
 }
 
-const visibleResults = computed(() => {
+function categoryStarted(category: { startedAt: string | null; mixedStart: boolean }) {
+  return category.startedAt !== null || category.mixedStart
+}
+
+const filteredResults = computed(() => {
   const rows = race.value?.results ?? []
   const needle = query.value.trim().toLocaleLowerCase('hr-HR')
   return rows
-    .filter((row) => categoryId.value === 'all' || row.categoryId === categoryId.value)
     .filter((row) => {
       if (!needle) return true
       const hay = [bibOf(row), nameOf(row), row.racer?.club, row.racer?.country].filter(Boolean).join(' ')
@@ -137,15 +143,30 @@ const visibleResults = computed(() => {
     })
 })
 
+const groups = computed(() => {
+  const categories = race.value?.categories ?? []
+  const known = new Set(categories.map((category) => category.id))
+  const rows = filteredResults.value
+  const grouped = categories.map((category) => ({
+    category,
+    rows: rows.filter((row) => row.categoryId === category.id),
+  }))
+  const orphans = rows.filter((row) => row.categoryId === null || !known.has(row.categoryId))
+  if (orphans.length) {
+    grouped.push({
+      category: { id: 0, name: 'Bez kategorije', startedAt: null, mixedStart: false, count: orphans.length },
+      rows: orphans,
+    })
+  }
+  if (query.value.trim()) return grouped.filter((group) => group.rows.length > 0)
+  return grouped.filter((group) => group.category.id !== 0 || group.rows.length > 0)
+})
+
 function statusOptions(result: TimingResult) {
   return STATUSES.map((status) => ({
     value: status,
     label: statusLabel({ status, racer: { gender: result.racer?.gender ?? null } }),
   }))
-}
-
-function categoryName(id: number | null) {
-  return race.value?.categories.find((category) => category.id === id)?.name ?? '—'
 }
 
 const categoryOptions = computed(() =>
@@ -180,22 +201,37 @@ function saveLaps(result: TimingResult, laps: { time: number; readerId: string }
   return run(result.id, () => timingApi.updateResult(raceId.value, result.id, { laps }), 'Krugovi nisu spremljeni')
 }
 
-async function startCategory(category: { id: number }) {
-  startingId.value = category.id
+function toggleCategory(id: number) {
+  const category = race.value?.categories.find((item) => item.id === id)
+  if (!category || categoryStarted(category)) return
+  selectedIds.value = selectedIds.value.includes(id)
+    ? selectedIds.value.filter((item) => item !== id)
+    : [...selectedIds.value, id]
+}
+
+async function startSelected() {
+  const ids = selectedIds.value.filter((id) => {
+    const category = race.value?.categories.find((item) => item.id === id)
+    return category !== undefined && !categoryStarted(category)
+  })
+  if (!ids.length) return
+  starting.value = true
   try {
-    const result = await timingApi.startCategory(raceId.value, category.id)
-    if (!result.updated) message.warning('Nema prijavljenih u kategoriji')
-    else message.success(`Start postavljen za ${result.updated}`)
+    let updated = 0
+    for (const id of ids) {
+      const result = await timingApi.startCategory(raceId.value, id)
+      updated += result.updated
+    }
+    if (!updated) message.warning('Nema prijavljenih u odabranim kategorijama')
+    else message.success(`Start postavljen za ${updated}`)
+    selectedIds.value = []
     await load()
   } catch (error) {
     message.error(error instanceof ApiError ? error.message : 'Start nije postavljen')
+    await load()
   } finally {
-    startingId.value = null
+    starting.value = false
   }
-}
-
-function needsConfirm(category: { startedAt: string | null; mixedStart: boolean }) {
-  return category.startedAt !== null || category.mixedStart
 }
 
 watch(racerQuery, (value) => {
@@ -271,141 +307,143 @@ function hitLabel(hit: TimingRacerHit) {
         <NButton :loading="refreshing" @click="load">Osvježi</NButton>
       </header>
 
-      <div class="counts">
-        <span v-for="item in counts" :key="item.label" class="count">
-          <b>{{ item.value }}</b> {{ item.label }}
-        </span>
-      </div>
+      <div class="panels">
+        <section class="panel">
+          <h3>Pregled</h3>
+          <div class="counts">
+            <span v-for="item in counts" :key="item.label" class="count">
+              <b>{{ item.value }}</b> {{ item.label }}
+            </span>
+          </div>
+        </section>
 
-      <div class="categories">
-        <NButton size="small" :type="categoryId === 'all' ? 'primary' : 'default'" @click="categoryId = 'all'">
-          Sve
-        </NButton>
-        <div v-for="category in race.categories" :key="category.id" class="category">
-          <NButton
-            size="small"
-            :type="categoryId === category.id ? 'primary' : 'default'"
-            @click="categoryId = category.id"
-          >
-            {{ category.name ?? 'Kategorija' }} ({{ category.count }})
-          </NButton>
-          <span class="start-label">
-            <template v-if="category.startedAt">{{ formatDateTime(category.startedAt) }}</template>
-            <template v-else-if="category.mixedStart">različit start</template>
-          </span>
-          <NPopconfirm
-            v-if="needsConfirm(category)"
-            positive-text="Prepiši start"
-            negative-text="Odustani"
-            @positive-click="startCategory(category)"
-          >
-            <template #trigger>
-              <NButton size="tiny" type="warning" :loading="startingId === category.id">Startiraj</NButton>
-            </template>
-            Prepisati postojeće vrijeme starta za sve natjecatelje u ovoj kategoriji?
-          </NPopconfirm>
-          <NButton v-else size="tiny" type="primary" :loading="startingId === category.id" @click="startCategory(category)">
-            Startiraj
-          </NButton>
-        </div>
-      </div>
-
-      <section class="register">
-        <NButton size="small" @click="showRegister = !showRegister">
-          {{ showRegister ? 'Sakrij prijavu' : 'Prijavi natjecatelja' }}
-        </NButton>
-        <div v-if="showRegister" class="register-box">
-          <NInput v-model:value="racerQuery" clearable placeholder="Ime, prezime ili ID" />
-          <p v-if="searching" class="sub">Tražim…</p>
-          <div v-if="racerHits.length" class="hits">
-            <button
-              v-for="hit in racerHits"
-              :key="hit.id"
-              type="button"
-              class="hit"
-              :class="{ picked: pickedRacer?.id === hit.id }"
-              @click="pickedRacer = hit"
+        <section class="panel">
+          <h3>Prijava</h3>
+          <div class="register-box">
+            <NInput v-model:value="racerQuery" clearable placeholder="Ime, prezime ili ID" />
+            <p v-if="searching" class="sub">Tražim…</p>
+            <div v-if="racerHits.length" class="hits">
+              <button
+                v-for="hit in racerHits"
+                :key="hit.id"
+                type="button"
+                class="hit"
+                :class="{ picked: pickedRacer?.id === hit.id }"
+                @click="pickedRacer = hit"
+              >
+                {{ hitLabel(hit) }}
+              </button>
+            </div>
+            <NSelect v-model:value="registerCategoryId" :options="categoryOptions" placeholder="Kategorija" />
+            <NButton
+              type="primary"
+              :disabled="!pickedRacer || registerCategoryId === null"
+              :loading="registering"
+              @click="register"
             >
-              {{ hitLabel(hit) }}
+              Prijavi
+            </NButton>
+          </div>
+        </section>
+
+        <section class="panel start-panel">
+          <div class="start-head">
+            <h3>Start</h3>
+            <NButton type="primary" size="small" :disabled="selectedIds.length === 0" :loading="starting" @click="startSelected">
+              Start
+            </NButton>
+          </div>
+          <div class="picks">
+            <button
+              v-for="category in race.categories"
+              :key="category.id"
+              type="button"
+              class="pick"
+              :class="{ on: selectedIds.includes(category.id) }"
+              :disabled="categoryStarted(category) || starting"
+              :aria-pressed="selectedIds.includes(category.id)"
+              @click="toggleCategory(category.id)"
+            >
+              <span>{{ category.name ?? 'Kategorija' }} ({{ category.count }})</span>
+              <span v-if="category.startedAt" class="pick-meta">{{ formatDateTime(category.startedAt) }}</span>
+              <span v-else-if="category.mixedStart" class="pick-meta">različit start</span>
             </button>
           </div>
-          <NSelect
-            v-model:value="registerCategoryId"
-            :options="categoryOptions"
-            placeholder="Kategorija"
-          />
-          <NButton type="primary" :disabled="!pickedRacer || registerCategoryId === null" :loading="registering" @click="register">
-            Prijavi
-          </NButton>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <NInput v-model:value="query" clearable placeholder="Broj, ime ili klub" />
 
-      <NEmpty v-if="visibleResults.length === 0" description="Nema natjecatelja" />
-      <div v-else class="scroller">
-        <table>
-          <thead>
-            <tr>
-              <th>Broj</th>
-              <th>Natjecatelj</th>
-              <th>Status</th>
-              <th>Start</th>
-              <th>Krugovi (Unix s)</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="result in visibleResults" :key="result.id">
-              <td class="bib">
-                <BibAssign
-                  :model-value="result.startNumberId"
-                  :options="startNumbers"
-                  :loading="savingId === result.id"
-                  @update="assignBib(result, $event)"
-                />
-              </td>
-              <td class="who">
-                <div class="name">
-                  <span v-if="countryFlag(result.racer?.country ?? null)" class="flag" :title="countryName(result.racer?.country ?? null)">
-                    {{ countryFlag(result.racer?.country ?? null) }}
-                  </span>
-                  {{ nameOf(result) }}
-                </div>
-                <div class="sub">
-                  {{ result.racer?.club ?? 'Bez kluba' }}
-                  <template v-if="categoryId === 'all'"> · {{ categoryName(result.categoryId) }}</template>
-                </div>
-              </td>
-              <td class="status">
-                <NSelect
-                  size="small"
-                  :value="result.status"
-                  :options="statusOptions(result)"
-                  :disabled="savingId === result.id"
-                  @update:value="setStatus(result, $event)"
-                />
-              </td>
-              <td class="when">{{ result.startedAt ? formatDateTime(result.startedAt) : '—' }}</td>
-              <td>
-                <LapTimesEditor
-                  :laps="result.laps"
-                  :saving="savingId === result.id"
-                  @save="saveLaps(result, $event)"
-                />
-              </td>
-              <td>
-                <NPopconfirm positive-text="Odjavi" negative-text="Odustani" @positive-click="unregister(result)">
-                  <template #trigger>
-                    <NButton size="tiny" quaternary type="error" :disabled="savingId === result.id">Odjavi</NButton>
-                  </template>
-                  Obrisati prijavu{{ result.laps.length || result.startNumberId ? ', broj i zabilježena vremena' : '' }}?
-                </NPopconfirm>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <NEmpty v-if="groups.length === 0" description="Nema natjecatelja" />
+      <section v-for="group in groups" :key="group.category.id" class="group">
+        <h3 class="group-title">
+          {{ group.category.name ?? 'Kategorija' }}
+          <span class="sub">{{ group.rows.length }}</span>
+          <span v-if="group.category.startedAt" class="sub"> · {{ formatDateTime(group.category.startedAt) }}</span>
+          <span v-else-if="group.category.mixedStart" class="sub"> · različit start</span>
+        </h3>
+        <p v-if="group.rows.length === 0" class="sub">Nema natjecatelja</p>
+        <div v-else class="scroller">
+          <table>
+            <thead>
+              <tr>
+                <th>Broj</th>
+                <th>Natjecatelj</th>
+                <th>Status</th>
+                <th>Start</th>
+                <th>Krugovi</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="result in group.rows" :key="result.id">
+                <td class="bib">
+                  <BibAssign
+                    :model-value="result.startNumberId"
+                    :options="startNumbers"
+                    :loading="savingId === result.id"
+                    @update="assignBib(result, $event)"
+                  />
+                </td>
+                <td class="who">
+                  <div class="name">
+                    <span v-if="countryFlag(result.racer?.country ?? null)" class="flag" :title="countryName(result.racer?.country ?? null)">
+                      {{ countryFlag(result.racer?.country ?? null) }}
+                    </span>
+                    {{ nameOf(result) }}
+                  </div>
+                  <div class="sub">{{ result.racer?.club ?? 'Bez kluba' }}</div>
+                </td>
+                <td class="status">
+                  <NSelect
+                    size="small"
+                    :value="result.status"
+                    :options="statusOptions(result)"
+                    :disabled="savingId === result.id"
+                    @update:value="setStatus(result, $event)"
+                  />
+                </td>
+                <td class="when">{{ result.startedAt ? formatDateTime(result.startedAt) : '—' }}</td>
+                <td>
+                  <LapTimesEditor
+                    :laps="result.laps"
+                    :saving="savingId === result.id"
+                    @save="saveLaps(result, $event)"
+                  />
+                </td>
+                <td>
+                  <NPopconfirm positive-text="Odjavi" negative-text="Odustani" @positive-click="unregister(result)">
+                    <template #trigger>
+                      <NButton size="tiny" quaternary type="error" :disabled="savingId === result.id">Odjavi</NButton>
+                    </template>
+                    Obrisati prijavu{{ result.laps.length || result.startNumberId ? ', broj i zabilježena vremena' : '' }}?
+                  </NPopconfirm>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </NSpin>
 </template>
@@ -436,6 +474,38 @@ function hitLabel(hit: TimingRacerHit) {
 .public {
   margin-left: 8px;
 }
+.panels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: stretch;
+}
+.panel {
+  flex: 1 1 280px;
+  border: 1px solid rgba(128, 128, 128, 0.28);
+  border-radius: 10px;
+  padding: 12px;
+}
+.panel h3,
+.group-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.start-panel {
+  flex-basis: 100%;
+}
+.start-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.start-head h3 {
+  margin: 0;
+}
 .counts {
   display: flex;
   flex-wrap: wrap;
@@ -447,26 +517,44 @@ function hitLabel(hit: TimingRacerHit) {
   background: rgba(128, 128, 128, 0.15);
   font-size: 13px;
 }
-.categories {
+.picks {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  align-items: center;
+  gap: 8px;
 }
-.category {
+.pick {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
 }
-.start-label {
-  font-size: 12px;
-  opacity: 0.7;
+.pick.on {
+  border-color: #18a058;
+  background: rgba(24, 160, 88, 0.12);
+}
+.pick:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.pick-meta {
+  font-size: 11px;
+  opacity: 0.75;
 }
 .register-box {
   display: grid;
   gap: 8px;
-  max-width: 480px;
-  margin-top: 8px;
+}
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .hits {
   display: flex;

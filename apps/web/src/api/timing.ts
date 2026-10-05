@@ -1,4 +1,5 @@
 import type {
+  ListResponse,
   TimingCategory,
   TimingRace,
   TimingRaceSummary,
@@ -16,7 +17,8 @@ export interface TimingRacerHit {
 }
 
 export const timingApi = {
-  races: (q?: string) => http.get<TimingRaceSummary[]>('/admin/timing/races', q ? { q } : {}),
+  races: (query: { q?: string; page?: number } = {}) =>
+    http.get<ListResponse<TimingRaceSummary>>('/admin/timing/races', query),
   racers: (q: string) => http.get<TimingRacerHit[]>('/admin/timing/racers', { q }),
   race: (raceId: number) => http.get<TimingRace>(`/admin/timing/races/${raceId}`),
   startCategory: (raceId: number, categoryId: number) =>

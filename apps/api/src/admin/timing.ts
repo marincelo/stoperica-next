@@ -1,4 +1,4 @@
-import type { TimingCategory, TimingCounts, TimingLap, TimingRace, TimingRaceSummary, TimingResult } from '@stoperica/shared'
+import type { ListResponse, TimingCategory, TimingCounts, TimingLap, TimingRace, TimingRaceSummary, TimingResult } from '@stoperica/shared'
 import type { FastifyPluginAsync } from 'fastify'
 import { prisma, type Prisma } from '../db.js'
 import { HttpError } from '../lib/errors.js'
@@ -32,6 +32,16 @@ const categoryParams = {
 const searchQuery = {
   type: 'object',
   properties: { q: { type: 'string' } },
+} as const
+
+const RACE_PAGE_SIZE = 10
+
+const racesQuery = {
+  type: 'object',
+  properties: {
+    q: { type: 'string' },
+    page: { type: 'integer', minimum: 1, default: 1 },
+  },
 } as const
 
 const registerBody = {
@@ -156,32 +166,43 @@ function toResult(row: ResultRow): TimingResult {
 }
 
 export const timingRoutes: FastifyPluginAsync = async (app) => {
-  app.get<{ Querystring: { q?: string } }>(
+  app.get<{ Querystring: { q?: string; page?: number } }>(
     '/races',
-    { schema: { querystring: searchQuery } },
-    async (request): Promise<TimingRaceSummary[]> => {
+    { schema: { querystring: racesQuery } },
+    async (request): Promise<ListResponse<TimingRaceSummary>> => {
       const q = request.query.q?.trim()
-      const races = await prisma.race.findMany({
-        where: q ? { name: { contains: q, mode: 'insensitive' } } : { endedAt: null },
-        orderBy: [{ date: 'desc' }, { id: 'desc' }],
-        take: 50,
-        select: {
-          id: true,
-          name: true,
-          date: true,
-          startedAt: true,
-          endedAt: true,
-          _count: { select: { raceResults: true } },
-        },
-      })
-      return races.map((race) => ({
-        id: race.id,
-        name: race.name,
-        date: race.date?.toISOString() ?? null,
-        startedAt: race.startedAt?.toISOString() ?? null,
-        endedAt: race.endedAt?.toISOString() ?? null,
-        registeredCount: race._count.raceResults,
-      }))
+      const page = request.query.page ?? 1
+      const where: Prisma.RaceWhereInput = q ? { name: { contains: q, mode: 'insensitive' } } : {}
+      const [races, total] = await prisma.$transaction([
+        prisma.race.findMany({
+          where,
+          orderBy: [{ date: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
+          skip: (page - 1) * RACE_PAGE_SIZE,
+          take: RACE_PAGE_SIZE,
+          select: {
+            id: true,
+            name: true,
+            date: true,
+            startedAt: true,
+            endedAt: true,
+            _count: { select: { raceResults: true } },
+          },
+        }),
+        prisma.race.count({ where }),
+      ])
+      return {
+        items: races.map((race) => ({
+          id: race.id,
+          name: race.name,
+          date: race.date?.toISOString() ?? null,
+          startedAt: race.startedAt?.toISOString() ?? null,
+          endedAt: race.endedAt?.toISOString() ?? null,
+          registeredCount: race._count.raceResults,
+        })),
+        total,
+        page,
+        pageSize: RACE_PAGE_SIZE,
+      }
     },
   )
 

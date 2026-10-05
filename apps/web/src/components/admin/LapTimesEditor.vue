@@ -59,7 +59,7 @@ const invalid = computed(() =>
       <NInput
         v-model:value="lap.time"
         size="small"
-        placeholder="Unix s"
+        placeholder=""
         :disabled="saving"
         @keydown.enter.prevent="save"
       />
