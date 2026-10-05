@@ -11,8 +11,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{ update: [startNumberId: number | null] }>()
 
-const selectOptions = computed(() =>
-  props.options.map((option) => {
+/** Sentinel for “no bib”. Naive Select options cannot use null. */
+const NONE = ''
+
+const selectOptions = computed(() => [
+  { value: NONE, label: '—' },
+  ...props.options.map((option) => {
     const mine = option.id === props.modelValue
     return {
       value: option.id,
@@ -20,11 +24,12 @@ const selectOptions = computed(() =>
       disabled: option.takenBy !== null && !mine,
     }
   }),
-)
+])
 
-function onUpdate(value: number | null) {
-  if (value === props.modelValue) return
-  emit('update', value)
+function onUpdate(value: number | string | null) {
+  const next = typeof value === 'number' ? value : null
+  if (next === props.modelValue) return
+  emit('update', next)
 }
 </script>
 
@@ -32,12 +37,11 @@ function onUpdate(value: number | null) {
   <NSelect
     class="bib-select"
     size="small"
-    :value="modelValue"
+    :value="modelValue ?? NONE"
     :options="selectOptions"
     :loading="loading"
     :disabled="loading"
     filterable
-    clearable
     placeholder="Broj"
     @update:value="onUpdate"
   />

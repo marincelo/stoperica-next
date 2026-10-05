@@ -39,6 +39,8 @@ export const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
       children: [
         { path: '', name: 'admin', component: () => import('@/views/admin/DashboardView.vue') },
+        { path: 'timing', name: 'timing', component: () => import('@/views/admin/TimingListView.vue') },
+        { path: 'timing/:raceId(\\d+)', name: 'timing-race', component: () => import('@/views/admin/TimingRaceView.vue') },
         { path: ':resource', name: 'resource-list', component: () => import('@/views/admin/ResourceListView.vue') },
         { path: ':resource/new', name: 'resource-new', component: () => import('@/views/admin/ResourceFormView.vue') },
         { path: ':resource/:id', name: 'resource-show', component: () => import('@/views/admin/ResourceShowView.vue') },

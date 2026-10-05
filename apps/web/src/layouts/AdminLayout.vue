@@ -18,6 +18,7 @@ const collapsed = ref(!isWide.value)
 
 const menuOptions = computed<MenuOption[]>(() => [
   { key: 'admin', label: () => h(RouterLink, { to: { name: 'admin' } }, () => 'Početna') },
+  { key: 'timing', label: () => h(RouterLink, { to: { name: 'timing' } }, () => 'Mjerenje') },
   { type: 'divider', key: 'divider' },
   ...metaStore.models.map((model) => ({
     key: model.resource,
@@ -26,7 +27,10 @@ const menuOptions = computed<MenuOption[]>(() => [
   })),
 ])
 
-const activeKey = computed(() => (route.params.resource ? String(route.params.resource) : 'admin'))
+const activeKey = computed(() => {
+  if (route.name === 'timing' || route.name === 'timing-race') return 'timing'
+  return route.params.resource ? String(route.params.resource) : 'admin'
+})
 
 function onMenuSelect() {
   if (!isWide.value) collapsed.value = true
