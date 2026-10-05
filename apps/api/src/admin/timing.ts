@@ -2,8 +2,9 @@ import type { ListResponse, TimingCategory, TimingCounts, TimingLap, TimingRace,
 import type { FastifyPluginAsync } from 'fastify'
 import { prisma, type Prisma } from '../db.js'
 import { HttpError } from '../lib/errors.js'
-import { LEAGUE_TYPES, RESULT_STATUS } from '../public/enums.js'
+import { LEAGUE_TYPES, RACE_TYPES, RESULT_STATUS } from '../public/enums.js'
 import { racePageCache } from '../public/raceCache.js'
+import { planRefresh, type ResultUpdate } from '../timing/refresh.js'
 
 const raceParams = {
   type: 'object',
@@ -388,6 +389,103 @@ export const timingRoutes: FastifyPluginAsync = async (app) => {
       await prisma.raceResult.update({ where: { id: resultId }, data })
       racePageCache.invalidate(raceId)
       return { ok: true }
+    },
+  )
+
+  app.post<{ Params: { raceId: number } }>(
+    '/races/:raceId/recalculate',
+    { schema: { params: raceParams } },
+    async (request) => {
+      const raceId = request.params.raceId
+      const race = await prisma.race.findUnique({
+        where: { id: raceId },
+        select: {
+          id: true,
+          raceType: true,
+          millisDisplay: true,
+          startedAt: true,
+          pointsMultiplier: true,
+          league: { select: { leagueType: true } },
+          categories: { select: { id: true, category: true } },
+          raceResults: {
+            select: {
+              id: true,
+              categoryId: true,
+              status: true,
+              position: true,
+              points: true,
+              additionalPoints: true,
+              finishTime: true,
+              finishDelta: true,
+              missedControlPoints: true,
+              lapTimes: true,
+              startedAt: true,
+              racer: { select: { gender: true, clubId: true } },
+            },
+          },
+        },
+      })
+      if (!race) throw new HttpError(404, 'Utrka nije pronađena')
+
+      const leagueType = LEAGUE_TYPES[race.league?.leagueType ?? -1] ?? null
+      const clubPoints =
+        leagueType === 'xczld' || leagueType === 'lead' || leagueType === 'running'
+          ? await prisma.clubLeaguePoint.findMany({
+              where: { league: { races: { some: { id: raceId } } } },
+              select: { id: true, clubId: true, points: true },
+            })
+          : []
+
+      const plan = planRefresh({
+        raceId,
+        raceType: RACE_TYPES[race.raceType ?? -1] ?? null,
+        millisDisplay: race.millisDisplay ?? false,
+        startedAt: race.startedAt,
+        pointsMultiplier: race.pointsMultiplier,
+        leagueType,
+        categories: race.categories.map((category) => ({ id: category.id, kind: category.category })),
+        results: race.raceResults.map((row) => ({
+          id: row.id,
+          categoryId: row.categoryId,
+          status: row.status,
+          position: row.position,
+          points: row.points,
+          additionalPoints: row.additionalPoints,
+          finishTime: row.finishTime,
+          finishDelta: row.finishDelta,
+          missedControlPoints: row.missedControlPoints,
+          lapTimes: row.lapTimes,
+          startedAt: row.startedAt,
+          gender: row.racer?.gender ?? null,
+          clubId: row.racer?.clubId ?? null,
+        })),
+        clubPoints,
+      })
+
+      const dataOf = (update: ResultUpdate): Prisma.RaceResultUpdateInput => ({
+        ...(update.position !== undefined ? { position: update.position } : {}),
+        ...(update.finishTime !== undefined ? { finishTime: update.finishTime } : {}),
+        ...(update.finishDelta !== undefined ? { finishDelta: update.finishDelta } : {}),
+        ...(update.points !== undefined ? { points: update.points } : {}),
+        ...(update.additionalPoints !== undefined ? { additionalPoints: update.additionalPoints } : {}),
+      })
+
+      await prisma.$transaction(
+        async (tx) => {
+          for (const update of plan.results) {
+            await tx.raceResult.update({ where: { id: update.id }, data: dataOf(update) })
+          }
+          for (const update of plan.clubPoints) {
+            await tx.clubLeaguePoint.update({
+              where: { id: update.id },
+              data: { points: update.points, total: update.total },
+            })
+          }
+        },
+        { timeout: 20_000 },
+      )
+      racePageCache.invalidate(raceId)
+      return { updated: plan.results.length }
     },
   )
 

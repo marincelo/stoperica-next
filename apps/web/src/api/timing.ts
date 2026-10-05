@@ -29,6 +29,8 @@ export const timingApi = {
     http.patch<{ ok: true }>(`/admin/timing/races/${raceId}/results/${resultId}`, body),
   unregister: (raceId: number, resultId: number) =>
     http.delete(`/admin/timing/races/${raceId}/results/${resultId}`),
+  recalculate: (raceId: number) =>
+    http.post<{ updated: number }>(`/admin/timing/races/${raceId}/recalculate`),
 }
 
 export type { TimingCategory, TimingResult }

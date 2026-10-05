@@ -16,6 +16,7 @@ import { ApiError } from '@/api/http'
 import { timingApi, type TimingRacerHit } from '@/api/timing'
 import LapTimesEditor from '@/components/admin/LapTimesEditor.vue'
 import BibAssign from '@/components/public/BibAssign.vue'
+import RaceExportMenu from '@/exports/RaceExportMenu.vue'
 import { countryFlag, countryName, formatDateTime, formatElapsed, statusLabel } from '@/public/format'
 
 const STATUSES = [1, 2, 3, 4, 5, 6]
@@ -28,6 +29,7 @@ const race = ref<TimingRace | null>(null)
 const startNumbers = ref<RaceStartNumberOption[]>([])
 const loading = ref(true)
 const refreshing = ref(false)
+const updating = ref(false)
 const notFound = ref(false)
 const query = ref('')
 const now = ref(Date.now())
@@ -45,6 +47,19 @@ let clockTimer: ReturnType<typeof setInterval> | undefined
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 
 const raceId = computed(() => Number(route.params.raceId))
+
+async function recalculate() {
+  updating.value = true
+  try {
+    const { updated } = await timingApi.recalculate(raceId.value)
+    message.success(updated ? `Ažurirano ${updated} rezultata` : 'Nema izmjena')
+    await load()
+  } catch (error) {
+    message.error(error instanceof ApiError ? error.message : 'Plasman nije ažuriran')
+  } finally {
+    updating.value = false
+  }
+}
 
 async function load() {
   const id = raceId.value
@@ -320,7 +335,16 @@ function hitLabel(hit: TimingRacerHit) {
             <RouterLink class="public" :to="{ name: 'race', params: { id: race.id } }">Javna stranica</RouterLink>
           </p>
         </div>
-        <NButton :loading="refreshing" @click="load">Osvježi</NButton>
+        <div class="head-actions">
+          <NPopconfirm positive-text="Azuriraj" negative-text="Odustani" @positive-click="recalculate">
+            <template #trigger>
+              <NButton type="primary" :loading="updating">Azuriraj</NButton>
+            </template>
+            Izračunati plasman, vremena i bodove za cijelu utrku?
+          </NPopconfirm>
+          <RaceExportMenu :race-id="race.id" />
+          <NButton :loading="refreshing" :disabled="updating" @click="load">Osvježi</NButton>
+        </div>
       </header>
 
       <div class="panels">
@@ -479,6 +503,12 @@ function hitLabel(hit: TimingRacerHit) {
 }
 .head h2 {
   margin: 2px 0 0;
+}
+.head-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
 }
 .back,
 .public {
