@@ -119,6 +119,29 @@ function nameOf(result: TimingResult) {
   return [last, racer.firstName].filter(Boolean).join(' ') || '—'
 }
 
+function lastLapTime(result: TimingResult) {
+  const time = result.laps.at(-1)?.time
+  return time !== undefined && time > 0 ? time : undefined
+}
+
+function compareResults(a: TimingResult, b: TimingResult) {
+  const laps = b.laps.length - a.laps.length
+  if (laps) return laps
+  const left = lastLapTime(a)
+  const right = lastLapTime(b)
+  if (left !== right) {
+    if (left === undefined) return 1
+    if (right === undefined) return -1
+    return left - right
+  }
+  const bibLeft = bibOf(a)
+  const bibRight = bibOf(b)
+  if (!bibLeft !== !bibRight) return bibLeft ? -1 : 1
+  const bib = bibLeft.localeCompare(bibRight, 'hr', { numeric: true })
+  if (bib) return bib
+  return nameOf(a).localeCompare(nameOf(b), 'hr')
+}
+
 function categoryStarted(category: { startedAt: string | null; mixedStart: boolean }) {
   return category.startedAt !== null || category.mixedStart
 }
@@ -133,14 +156,7 @@ const filteredResults = computed(() => {
       return hay.toLocaleLowerCase('hr-HR').includes(needle)
     })
     .slice()
-    .sort((a, b) => {
-      const left = bibOf(a)
-      const right = bibOf(b)
-      if (!left !== !right) return left ? -1 : 1
-      const bib = left.localeCompare(right, 'hr', { numeric: true })
-      if (bib) return bib
-      return nameOf(a).localeCompare(nameOf(b), 'hr')
-    })
+    .sort(compareResults)
 })
 
 const groups = computed(() => {
