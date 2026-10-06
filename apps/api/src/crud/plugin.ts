@@ -134,7 +134,9 @@ async function registerResourceRoutes(app: FastifyInstance, resource: Resource) 
         data: toPrismaData(resource, request.body, 'create'),
         omit: omitFor(resource),
       })
-      await resource.definition.afterWrite?.(record[idField] as string | number | bigint)
+      const id = record[idField] as string | number | bigint
+      await resource.definition.afterCreate?.(id)
+      await resource.definition.afterWrite?.(id)
       return reply.code(201).send(record)
     },
   )

@@ -23,4 +23,7 @@ export const env = {
   // Use "none" only when admin and API live on different sites (requires HTTPS).
   cookieSameSite: (process.env.COOKIE_SAMESITE ?? 'lax') as 'lax' | 'strict' | 'none',
   cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : isProduction,
+  /** Gmail app password for stoperica.timing@gmail.com. Unset keeps mail in the server log. */
+  emailPassword: process.env.EMAIL_PASSWORD || null,
+  publicWebUrl: (process.env.PUBLIC_WEB_URL ?? 'https://www.stoperica.live').replace(/\/$/, ''),
 }

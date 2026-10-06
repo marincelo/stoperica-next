@@ -9,7 +9,7 @@ import type {
 import type { FastifyPluginAsync } from 'fastify'
 import { prisma, type Prisma } from '../db.js'
 import { HttpError } from '../lib/errors.js'
-import { mailer } from '../lib/mailer.js'
+import { sendRegistrationEmail } from '../mail/messages.js'
 import { NO_UCI_ID } from '../auth/profile.js'
 import { LEAGUE_TYPES, RACE_TYPES, RESULT_STATUS } from './enums.js'
 import { getLiveRace } from './live.js'
@@ -299,13 +299,7 @@ export const publicRaceRoutes: FastifyPluginAsync = async (app) => {
       })
       racePageCache.invalidate(race.id)
 
-      if (race.sendEmail) {
-        await mailer.send({
-          to: request.session!.email,
-          subject: `Prijava na ${race.name}`,
-          html: race.emailBody ?? '',
-        })
-      }
+      sendRegistrationEmail(race, request.session!.email)
       return reply.code(201).send(created)
     },
   )

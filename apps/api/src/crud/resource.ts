@@ -20,6 +20,8 @@ export interface ResourceOptions<M extends ModelName> {
   intEnums?: Partial<Record<ScalarField<M>, readonly string[]>>
   /** Called before an update or delete, while the row still has its previous values. */
   beforeWrite?: (id: string | number | bigint) => void | Promise<void>
+  /** Called after a successful create, before `afterWrite`. */
+  afterCreate?: (id: string | number | bigint) => void | Promise<void>
   /** Called after a successful create, update, or delete. */
   afterWrite?: (id: string | number | bigint) => void | Promise<void>
 }
