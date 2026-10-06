@@ -7,7 +7,7 @@ import fp from 'fastify-plugin'
 import { prisma } from '../db.js'
 import { env } from '../env.js'
 import { HttpError } from '../lib/errors.js'
-import { escapeHtml, mailer } from '../lib/mailer.js'
+import { sendWelcomeEmail } from '../mail/messages.js'
 import { findRacerByCredentials, isPhoneTaken } from './credentials.js'
 import { signupSchema, toRacerData } from './profile.js'
 
@@ -128,13 +128,9 @@ export const authPlugin = fp(async (app) => {
 
           const racer = await prisma.racer.create({
             data: { ...(await toRacerData(body)), createdAt: new Date() },
-            select: { id: true, email: true, firstName: true },
+            select: { id: true, email: true, firstName: true, phoneNumber: true },
           })
-          await mailer.send({
-            to: racer.email!,
-            subject: 'Dobrodošli na Stoperica.live',
-            html: `<p>Pozdrav ${escapeHtml(racer.firstName)},</p><p>tvoj profil natjecatelja je kreiran. Za prijavu na utrku otvori utrku, odaberi kategoriju i potvrdi na "Prijavi se".</p>`,
-          })
+          sendWelcomeEmail(racer)
           await startSession(reply, racer.id)
           return reply.code(201).send(await loadSession(racer.id))
         },

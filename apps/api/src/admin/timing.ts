@@ -4,6 +4,7 @@ import { prisma, type Prisma } from '../db.js'
 import { HttpError } from '../lib/errors.js'
 import { LEAGUE_TYPES, RACE_TYPES, RESULT_STATUS } from '../public/enums.js'
 import { racePageCache } from '../public/raceCache.js'
+import { sendRegistrationEmail } from '../mail/messages.js'
 import { planRefresh, type ResultUpdate } from '../timing/refresh.js'
 
 const raceParams = {
@@ -352,7 +353,14 @@ export const timingRoutes: FastifyPluginAsync = async (app) => {
       const { racerId, categoryId } = request.body
       const race = await prisma.race.findUnique({
         where: { id: raceId },
-        select: { id: true, leagueId: true, league: { select: { leagueType: true } } },
+        select: {
+          id: true,
+          name: true,
+          sendEmail: true,
+          emailBody: true,
+          leagueId: true,
+          league: { select: { leagueType: true } },
+        },
       })
       if (!race) throw new HttpError(404, 'Utrka nije pronađena')
       const category = await prisma.category.findFirst({
@@ -360,7 +368,7 @@ export const timingRoutes: FastifyPluginAsync = async (app) => {
         select: { id: true },
       })
       if (!category) throw new HttpError(400, 'Odabrana kategorija ne pripada utrci')
-      const racer = await prisma.racer.findUnique({ where: { id: racerId }, select: { id: true } })
+      const racer = await prisma.racer.findUnique({ where: { id: racerId }, select: { id: true, email: true } })
       if (!racer) throw new HttpError(404, 'Natjecatelj nije pronađen')
       const existing = await prisma.raceResult.findFirst({
         where: { raceId, racerId },
@@ -397,6 +405,7 @@ export const timingRoutes: FastifyPluginAsync = async (app) => {
         select: { id: true },
       })
       racePageCache.invalidate(raceId)
+      sendRegistrationEmail(race, racer.email)
       return reply.code(201).send(created)
     },
   )

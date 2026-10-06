@@ -55,6 +55,9 @@ PORT=3000
 DATABASE_URL=postgresql://stoperica:$DB_PASSWORD@127.0.0.1:5432/stoperica
 JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')
 CORS_ORIGIN=$PUBLIC_ORIGIN
+# Same Gmail app password as the Rails EMAIL_PASSWORD.
+EMAIL_PASSWORD=
+PUBLIC_WEB_URL=$PUBLIC_ORIGIN
 # Plain HTTP while testing on the IP address. Remove once HTTPS is set up.
 COOKIE_SECURE=false
 EOF

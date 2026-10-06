@@ -16,6 +16,7 @@ import {
   rememberRacerRaces,
   rememberStartNumberRaces,
 } from './public/invalidateRacePage.js'
+import { sendWelcomeEmailForRacer } from './mail/messages.js'
 import { publicLeagueRoutes } from './public/leagues.js'
 import { clubRoutes } from './public/clubs.js'
 import { meRoutes } from './public/me.js'
@@ -46,6 +47,7 @@ const adminResources: ResourceEntry[] = [
     displayField: 'lastName',
     displayFields: ['lastName', 'firstName'],
     intEnums: { gender: GENDER_LABELS },
+    afterCreate: (id) => sendWelcomeEmailForRacer(Number(id)),
     beforeWrite: (id) => rememberRacerRaces(Number(id)),
     afterWrite: (id) => invalidateRacerRaces(Number(id)),
   }),
