@@ -36,6 +36,8 @@ const now = ref(Date.now())
 const savingId = ref<number | null>(null)
 const selectedIds = ref<number[]>([])
 const starting = ref(false)
+const startingRace = ref(false)
+const endingRace = ref(false)
 const racerQuery = ref('')
 const racerHits = ref<TimingRacerHit[]>([])
 const pickedRacer = ref<TimingRacerHit | null>(null)
@@ -240,6 +242,34 @@ function toggleCategory(id: number) {
     : [...selectedIds.value, id]
 }
 
+async function startRace() {
+  if (!race.value || race.value.startedAt) return
+  startingRace.value = true
+  try {
+    await timingApi.startRace(raceId.value)
+    message.success('Utrka je startana')
+    await load()
+  } catch (error) {
+    message.error(error instanceof ApiError ? error.message : 'Utrka nije startana')
+  } finally {
+    startingRace.value = false
+  }
+}
+
+async function endRace() {
+  if (!race.value?.startedAt || race.value.endedAt) return
+  endingRace.value = true
+  try {
+    await timingApi.endRace(raceId.value)
+    message.success('Utrka je završena')
+    await load()
+  } catch (error) {
+    message.error(error instanceof ApiError ? error.message : 'Utrka nije završena')
+  } finally {
+    endingRace.value = false
+  }
+}
+
 async function startSelected() {
   const ids = selectedIds.value.filter((id) => {
     const category = race.value?.categories.find((item) => item.id === id)
@@ -389,9 +419,22 @@ function hitLabel(hit: TimingRacerHit) {
         <section class="panel start-panel">
           <div class="start-head">
             <h3>Start</h3>
-            <NButton type="primary" size="small" :disabled="selectedIds.length === 0" :loading="starting" @click="startSelected">
-              Start
-            </NButton>
+            <div class="start-actions">
+              <NButton size="small" :disabled="!!race.startedAt" :loading="startingRace" @click="startRace">
+                Start utrke
+              </NButton>
+              <NPopconfirm positive-text="Završi" negative-text="Odustani" @positive-click="endRace">
+                <template #trigger>
+                  <NButton size="small" :disabled="!race.startedAt || !!race.endedAt" :loading="endingRace">
+                    Završi utrku
+                  </NButton>
+                </template>
+                Završiti utrku? Uređaji više neće bilježiti prolaze.
+              </NPopconfirm>
+              <NButton type="primary" size="small" :disabled="selectedIds.length === 0" :loading="starting" @click="startSelected">
+                Start
+              </NButton>
+            </div>
           </div>
           <div class="picks">
             <button
@@ -552,6 +595,12 @@ function hitLabel(hit: TimingRacerHit) {
 }
 .start-head h3 {
   margin: 0;
+}
+.start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 .counts {
   display: flex;

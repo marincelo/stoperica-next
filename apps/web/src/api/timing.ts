@@ -23,6 +23,10 @@ export const timingApi = {
   race: (raceId: number) => http.get<TimingRace>(`/admin/timing/races/${raceId}`),
   startCategory: (raceId: number, categoryId: number) =>
     http.post<{ startedAt: string; updated: number }>(`/admin/timing/races/${raceId}/categories/${categoryId}/start`),
+  startRace: (raceId: number) =>
+    http.post<{ startedAt: string }>(`/admin/timing/races/${raceId}/start`),
+  endRace: (raceId: number) =>
+    http.post<{ endedAt: string }>(`/admin/timing/races/${raceId}/end`),
   register: (raceId: number, body: { racerId: number; categoryId: number }) =>
     http.post<{ id: number }>(`/admin/timing/races/${raceId}/results`, body),
   updateResult: (raceId: number, resultId: number, body: { status?: number; laps?: TimingLap[] }) =>
