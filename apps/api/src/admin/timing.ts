@@ -305,6 +305,45 @@ export const timingRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
+  app.post<{ Params: { raceId: number } }>(
+    '/races/:raceId/start',
+    { schema: { params: raceParams } },
+    async (request) => {
+      const raceId = request.params.raceId
+      const race = await prisma.race.findUnique({
+        where: { id: raceId },
+        select: { id: true, startedAt: true },
+      })
+      if (!race) throw new HttpError(404, 'Utrka nije pronađena')
+      if (race.startedAt) throw new HttpError(409, 'Utrka je već startana')
+
+      const startedAt = new Date()
+      await prisma.race.update({ where: { id: raceId }, data: { startedAt } })
+      racePageCache.invalidate(raceId)
+      return { startedAt: startedAt.toISOString() }
+    },
+  )
+
+  app.post<{ Params: { raceId: number } }>(
+    '/races/:raceId/end',
+    { schema: { params: raceParams } },
+    async (request) => {
+      const raceId = request.params.raceId
+      const race = await prisma.race.findUnique({
+        where: { id: raceId },
+        select: { id: true, startedAt: true, endedAt: true },
+      })
+      if (!race) throw new HttpError(404, 'Utrka nije pronađena')
+      if (!race.startedAt) throw new HttpError(400, 'Utrka nije startana')
+      if (race.endedAt) throw new HttpError(409, 'Utrka je već završena')
+
+      const endedAt = new Date()
+      await prisma.race.update({ where: { id: raceId }, data: { endedAt } })
+      racePageCache.invalidate(raceId)
+      return { endedAt: endedAt.toISOString() }
+    },
+  )
+
   app.post<{ Params: { raceId: number }; Body: { racerId: number; categoryId: number } }>(
     '/races/:raceId/results',
     { schema: { params: raceParams, body: registerBody } },
