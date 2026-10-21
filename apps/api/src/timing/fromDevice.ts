@@ -205,5 +205,5 @@ export const deviceRoutes: FastifyPluginAsync = async (app) => {
   }
 
   app.route({ method: ['GET', 'POST'], url: '/from_device', handler: fromDevice })
-  app.get('/check_token', checkToken)
+  app.route({ method: ['GET', 'POST'], url: '/check_token', handler: checkToken })
 }
